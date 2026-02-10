@@ -8,11 +8,11 @@
 		<version>3.4.1</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.hairhub</groupId>
+	<groupId>com.bookhub</groupId>
 	<artifactId>backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>hairhub-backend</name>
-	<description>HairHub Backend API</description>
+	<name>bookhub-backend</name>
+	<description>BookHub Backend API</description>
 	<url/>
 	<licenses>
 		<license/>

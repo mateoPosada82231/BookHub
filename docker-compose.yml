@@ -1,20 +1,26 @@
-services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: hairhub-db
-    environment:
-      POSTGRES_USER: hairhub
-      POSTGRES_PASSWORD: hairhub_secret
-      POSTGRES_DB: hairhub
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U hairhub -d hairhub" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+# BookHub - Docker Compose
+# NOTA: PostgreSQL se ejecuta en un contenedor externo (puerto 5432).
+# Este archivo queda como referencia. Para desarrollo local,
+# usa el contenedor de postgres que ya tienes corriendo.
 
-volumes:
-  postgres_data:
+# Si necesitas levantar postgres desde aquí, descomenta:
+# services:
+#   postgres:
+#     image: postgres:16-alpine
+#     container_name: bookhub-db
+#     environment:
+#       POSTGRES_USER: bookhub
+#       POSTGRES_PASSWORD: bookhub_secret
+#       POSTGRES_DB: bookhub
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: [ "CMD-SHELL", "pg_isready -U bookhub -d bookhub" ]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+#
+# volumes:
+#   postgres_data:

@@ -1,5 +1,5 @@
 -- =====================================================
--- HairHub Seed Data
+-- BookHub Seed Data
 -- Version: V2
 -- Description: Initial test data for development
 -- =====================================================

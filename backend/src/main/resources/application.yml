@@ -1,12 +1,12 @@
 spring:
   application:
-    name: hairhub-backend
+    name: bookhub-backend
 
   # Database Configuration
   datasource:
-    url: jdbc:postgresql://localhost:5433/hairhub
-    username: hairhub
-    password: hairhub_secret
+    url: jdbc:postgresql://localhost:5432/bookhub
+    username: postgres
+    password: admin
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -16,9 +16,9 @@ spring:
   # JPA/Hibernate
   jpa:
     hibernate:
-      ddl-auto: validate  # Flyway handles migrations, Hibernate only validates
+      ddl-auto: validate # Flyway handles migrations, Hibernate only validates
     show-sql: false
-    open-in-view: false  # Best practice: disable OSIV
+    open-in-view: false # Best practice: disable OSIV
     properties:
       hibernate:
         format_sql: true
@@ -52,42 +52,42 @@ server:
 # JWT Configuration
 app:
   jwt:
-    secret: ${JWT_SECRET:hairhub-super-secret-key-change-in-production-must-be-at-least-256-bits-long-for-hs256}
-    expiration-ms: 86400000  # 24 hours
-    refresh-expiration-ms: 604800000  # 7 days
-  
+    secret: ${JWT_SECRET:bookhub-super-secret-key-change-in-production-must-be-at-least-256-bits-long-for-hs256}
+    expiration-ms: 86400000 # 24 hours
+    refresh-expiration-ms: 604800000 # 7 days
+
   # Development Mode - shows reset links in API response instead of sending email
   dev-mode: ${DEV_MODE:true}
-  
+
   # Password Reset Configuration
   password-reset:
-    expiration-minutes: 60  # 1 hour
-  
+    expiration-minutes: 60 # 1 hour
+
   # Email Configuration
   email:
-    enabled: ${EMAIL_ENABLED:false}  # Enable in production
-    from: ${EMAIL_FROM:noreply@hairhub.com}
-  
+    enabled: ${EMAIL_ENABLED:false} # Enable in production
+    from: ${EMAIL_FROM:noreply@bookhub.com}
+
   # Frontend URL for email links
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
-  
+
   # Rate Limiting Configuration
   rate-limit:
     login:
-      requests: 5           # Max login attempts
-      duration-minutes: 15  # Time window
+      requests: 5 # Max login attempts
+      duration-minutes: 15 # Time window
     password-reset:
-      requests: 3           # Max password reset requests
-      duration-minutes: 60  # Time window
+      requests: 3 # Max password reset requests
+      duration-minutes: 60 # Time window
     general:
-      requests: 100         # Max general API requests
-      duration-minutes: 1   # Time window
+      requests: 100 # Max general API requests
+      duration-minutes: 1 # Time window
 
 # Logging
 logging:
   level:
     root: INFO
-    com.hairhub: DEBUG
+    com.bookhub: DEBUG
     org.springframework.security: DEBUG
     org.flywaydb: INFO
     org.hibernate.SQL: DEBUG
@@ -99,13 +99,13 @@ spring:
   config:
     activate:
       on-profile: prod
-  
+
   jpa:
     show-sql: false
-  
+
   flyway:
     baseline-on-migrate: false
-  
+
   docker:
     compose:
       enabled: false
@@ -113,5 +113,5 @@ spring:
 logging:
   level:
     root: WARN
-    com.hairhub: INFO
+    com.bookhub: INFO
     org.hibernate.SQL: WARN

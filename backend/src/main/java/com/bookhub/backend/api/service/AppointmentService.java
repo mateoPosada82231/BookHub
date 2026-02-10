@@ -1,0 +1,506 @@
+package com.bookhub.backend.api.service;
+
+import com.bookhub.backend.api.dto.appointment.*;
+import com.bookhub.backend.api.dto.common.PageResponse;
+import com.bookhub.backend.api.exception.BadRequestException;
+import com.bookhub.backend.api.exception.ConflictException;
+import com.bookhub.backend.api.exception.ForbiddenException;
+import com.bookhub.backend.api.exception.ResourceNotFoundException;
+import com.bookhub.backend.domain.booking.*;
+import com.bookhub.backend.domain.business.*;
+import com.bookhub.backend.domain.user.User;
+import com.bookhub.backend.domain.user.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class AppointmentService {
+
+    private final AppointmentRepository appointmentRepository;
+    private final ReviewRepository reviewRepository;
+    private final WorkerRepository workerRepository;
+    private final ServiceRepository serviceRepository;
+    private final WorkerScheduleRepository workerScheduleRepository;
+    private final UserRepository userRepository;
+    private final BusinessRepository businessRepository;
+
+    /**
+     * Create a new appointment
+     */
+    @Transactional
+    public AppointmentResponse createAppointment(Long clientId, CreateAppointmentRequest request) {
+        User client = userRepository.findById(clientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario", clientId));
+
+        Worker worker = workerRepository.findById(request.getWorkerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Trabajador", request.getWorkerId()));
+
+        if (!worker.isActive()) {
+            throw new BadRequestException("El trabajador no está disponible");
+        }
+
+        com.bookhub.backend.domain.business.Service service = serviceRepository.findById(request.getServiceId())
+                .orElseThrow(() -> new ResourceNotFoundException("Servicio", request.getServiceId()));
+
+        if (!service.isActive()) {
+            throw new BadRequestException("El servicio no está disponible");
+        }
+
+        // Verify service belongs to worker's business
+        if (!service.getBusiness().getId().equals(worker.getBusiness().getId())) {
+            throw new BadRequestException("El servicio no pertenece al negocio del trabajador seleccionado");
+        }
+
+        LocalDateTime startTime = request.getStartTime();
+        LocalDateTime endTime = startTime.plusMinutes(service.getDurationMinutes());
+
+        // Validate worker availability (schedule)
+        validateWorkerSchedule(worker.getId(), startTime, endTime);
+
+        // Check for overlapping appointments
+        List<Appointment> overlapping = appointmentRepository.findOverlappingAppointments(
+                worker.getId(), startTime, endTime);
+
+        if (!overlapping.isEmpty()) {
+            throw new ConflictException("El trabajador ya tiene una cita en ese horario");
+        }
+
+        Appointment appointment = Appointment.builder()
+                .client(client)
+                .worker(worker)
+                .service(service)
+                .startTime(startTime)
+                .endTime(endTime)
+                .status(AppointmentStatus.PENDING)
+                .clientNotes(request.getClientNotes())
+                .build();
+
+        appointment = appointmentRepository.save(appointment);
+
+        return toResponse(appointment);
+    }
+
+    /**
+     * Get appointment by ID
+     */
+    @Transactional(readOnly = true)
+    public AppointmentResponse getAppointmentById(Long id, Long userId) {
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cita", id));
+
+        // Verify access (client, worker, or business owner)
+        boolean isClient = appointment.getClient().getId().equals(userId);
+        boolean isWorker = appointment.getWorker().getUser().getId().equals(userId);
+        boolean isOwner = appointment.getWorker().getBusiness().getOwner().getId().equals(userId);
+
+        if (!isClient && !isWorker && !isOwner) {
+            throw new ForbiddenException("No tienes permiso para ver esta cita");
+        }
+
+        return toResponse(appointment);
+    }
+
+    /**
+     * Get appointments for a client
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<AppointmentResponse> getClientAppointments(Long clientId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("startTime").descending());
+        Page<Appointment> appointments = appointmentRepository.findByClientIdOrderByStartTimeDesc(clientId, pageable);
+
+        return toPageResponse(appointments);
+    }
+
+    /**
+     * Get upcoming appointments for a client
+     */
+    @Transactional(readOnly = true)
+    public List<AppointmentResponse> getUpcomingClientAppointments(Long clientId) {
+        return appointmentRepository.findUpcomingForClient(clientId, LocalDateTime.now())
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get appointments for a worker
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<AppointmentResponse> getWorkerAppointments(Long workerId, Long userId, int page, int size) {
+        Worker worker = workerRepository.findById(workerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Trabajador", workerId));
+
+        // Verify access
+        boolean isWorker = worker.getUser().getId().equals(userId);
+        boolean isOwner = worker.getBusiness().getOwner().getId().equals(userId);
+
+        if (!isWorker && !isOwner) {
+            throw new ForbiddenException("No tienes permiso para ver estas citas");
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("startTime").descending());
+        Page<Appointment> appointments = appointmentRepository.findByWorkerIdOrderByStartTimeDesc(workerId, pageable);
+
+        return toPageResponse(appointments);
+    }
+
+    /**
+     * Get upcoming appointments for a worker
+     */
+    @Transactional(readOnly = true)
+    public List<AppointmentResponse> getUpcomingWorkerAppointments(Long workerId, Long userId) {
+        Worker worker = workerRepository.findById(workerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Trabajador", workerId));
+
+        // Verify access
+        boolean isWorker = worker.getUser().getId().equals(userId);
+        boolean isOwner = worker.getBusiness().getOwner().getId().equals(userId);
+
+        if (!isWorker && !isOwner) {
+            throw new ForbiddenException("No tienes permiso para ver estas citas");
+        }
+
+        return appointmentRepository.findUpcomingForWorker(workerId, LocalDateTime.now())
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Update appointment status
+     */
+    @Transactional
+    public AppointmentResponse updateAppointment(Long appointmentId, Long userId, UpdateAppointmentRequest request) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cita", appointmentId));
+
+        boolean isClient = appointment.getClient().getId().equals(userId);
+        boolean isWorker = appointment.getWorker().getUser().getId().equals(userId);
+        boolean isOwner = appointment.getWorker().getBusiness().getOwner().getId().equals(userId);
+
+        if (!isClient && !isWorker && !isOwner) {
+            throw new ForbiddenException("No tienes permiso para modificar esta cita");
+        }
+
+        if (request.getStatus() != null) {
+            validateStatusTransition(appointment.getStatus(), request.getStatus(), isClient);
+            appointment.setStatus(request.getStatus());
+
+            if (request.getStatus() == AppointmentStatus.CANCELLED) {
+                appointment.setCancellationReason(request.getCancellationReason());
+            }
+        }
+
+        appointment = appointmentRepository.save(appointment);
+
+        return toResponse(appointment);
+    }
+
+    /**
+     * Cancel appointment
+     */
+    @Transactional
+    public AppointmentResponse cancelAppointment(Long appointmentId, Long userId, String reason) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cita", appointmentId));
+
+        boolean isClient = appointment.getClient().getId().equals(userId);
+        boolean isWorker = appointment.getWorker().getUser().getId().equals(userId);
+        boolean isOwner = appointment.getWorker().getBusiness().getOwner().getId().equals(userId);
+
+        if (!isClient && !isWorker && !isOwner) {
+            throw new ForbiddenException("No tienes permiso para cancelar esta cita");
+        }
+
+        if (appointment.getStatus() == AppointmentStatus.COMPLETED ||
+                appointment.getStatus() == AppointmentStatus.CANCELLED) {
+            throw new BadRequestException("No se puede cancelar una cita que ya está " +
+                    appointment.getStatus().name().toLowerCase());
+        }
+
+        appointment.setStatus(AppointmentStatus.CANCELLED);
+        appointment.setCancellationReason(reason);
+
+        appointment = appointmentRepository.save(appointment);
+
+        return toResponse(appointment);
+    }
+
+    /**
+     * Create a review for a completed appointment
+     */
+    @Transactional
+    public ReviewResponse createReview(Long appointmentId, Long clientId, CreateReviewRequest request) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cita", appointmentId));
+
+        // Verify client
+        if (!appointment.getClient().getId().equals(clientId)) {
+            throw new ForbiddenException("Solo el cliente puede dejar una reseña");
+        }
+
+        // Verify appointment is completed
+        if (appointment.getStatus() != AppointmentStatus.COMPLETED) {
+            throw new BadRequestException("Solo se pueden reseñar citas completadas");
+        }
+
+        // Check if already has review
+        if (appointment.getReview() != null) {
+            throw new ConflictException("Esta cita ya tiene una reseña");
+        }
+
+        Review review = Review.builder()
+                .appointment(appointment)
+                .rating(request.getRating())
+                .comment(request.getComment())
+                .build();
+
+        review = reviewRepository.save(review);
+
+        // Update business rating
+        updateBusinessRating(appointment.getWorker().getBusiness().getId());
+
+        return toReviewResponse(review, appointment);
+    }
+
+    /**
+     * Get reviews for a business
+     */
+    @Transactional(readOnly = true)
+    public List<ReviewResponse> getBusinessReviews(Long businessId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio", businessId));
+
+        return reviewRepository.findByBusinessId(businessId)
+                .stream()
+                .map(review -> toReviewResponse(review, review.getAppointment()))
+                .collect(Collectors.toList());
+    }
+
+    // ========== HELPER METHODS ==========
+
+    private void validateWorkerSchedule(Long workerId, LocalDateTime startTime, LocalDateTime endTime) {
+        int dayOfWeek = startTime.getDayOfWeek().getValue() % 7; // Convert to 0=Sunday format
+        LocalTime start = startTime.toLocalTime();
+        LocalTime end = endTime.toLocalTime();
+
+        List<WorkerSchedule> schedules = workerScheduleRepository.findByWorkerIdAndAvailableTrue(workerId);
+
+        boolean isAvailable = schedules.stream()
+                .filter(s -> s.getDayOfWeek() == dayOfWeek)
+                .anyMatch(s -> !start.isBefore(s.getStartTime()) && !end.isAfter(s.getEndTime()));
+
+        if (!isAvailable) {
+            throw new BadRequestException("El trabajador no está disponible en ese horario");
+        }
+    }
+
+    private void validateStatusTransition(AppointmentStatus current, AppointmentStatus next, boolean isClient) {
+        // Clients can only cancel
+        if (isClient && next != AppointmentStatus.CANCELLED) {
+            throw new ForbiddenException("Los clientes solo pueden cancelar citas");
+        }
+
+        // Define valid transitions
+        switch (current) {
+            case PENDING:
+                if (next != AppointmentStatus.CONFIRMED && next != AppointmentStatus.CANCELLED) {
+                    throw new BadRequestException("Transición de estado no válida");
+                }
+                break;
+            case CONFIRMED:
+                if (next != AppointmentStatus.COMPLETED &&
+                        next != AppointmentStatus.CANCELLED &&
+                        next != AppointmentStatus.NO_SHOW) {
+                    throw new BadRequestException("Transición de estado no válida");
+                }
+                break;
+            case COMPLETED:
+            case CANCELLED:
+            case NO_SHOW:
+                throw new BadRequestException("No se puede cambiar el estado de una cita finalizada");
+        }
+    }
+
+    private void updateBusinessRating(Long businessId) {
+        List<Review> reviews = reviewRepository.findByBusinessId(businessId);
+
+        if (reviews.isEmpty()) {
+            return;
+        }
+
+        double average = reviews.stream()
+                .mapToInt(Review::getRating)
+                .average()
+                .orElse(0.0);
+
+        Business business = businessRepository.findById(businessId).orElseThrow();
+        business.setAverageRating(BigDecimal.valueOf(average).setScale(1, RoundingMode.HALF_UP));
+        business.setTotalReviews(reviews.size());
+        businessRepository.save(business);
+    }
+
+    private AppointmentResponse toResponse(Appointment appointment) {
+        return AppointmentResponse.builder()
+                .id(appointment.getId())
+                .clientId(appointment.getClient().getId())
+                .clientName(appointment.getClient().getProfile() != null
+                        ? appointment.getClient().getProfile().getFullName()
+                        : null)
+                .clientPhone(appointment.getClient().getProfile() != null
+                        ? appointment.getClient().getProfile().getPhone()
+                        : null)
+                .workerId(appointment.getWorker().getId())
+                .workerName(appointment.getWorker().getUser().getProfile() != null
+                        ? appointment.getWorker().getUser().getProfile().getFullName()
+                        : null)
+                .serviceId(appointment.getService().getId())
+                .serviceName(appointment.getService().getName())
+                .servicePrice(appointment.getService().getPrice())
+                .serviceDuration(appointment.getService().getDurationMinutes())
+                .businessId(appointment.getWorker().getBusiness().getId())
+                .businessName(appointment.getWorker().getBusiness().getName())
+                .businessAddress(appointment.getWorker().getBusiness().getAddress())
+                .startTime(appointment.getStartTime())
+                .endTime(appointment.getEndTime())
+                .status(appointment.getStatus())
+                .clientNotes(appointment.getClientNotes())
+                .cancellationReason(appointment.getCancellationReason())
+                .createdAt(appointment.getCreatedAt())
+                .hasReview(appointment.getReview() != null)
+                .review(appointment.getReview() != null
+                        ? toReviewResponse(appointment.getReview(), appointment)
+                        : null)
+                .build();
+    }
+
+    private ReviewResponse toReviewResponse(Review review, Appointment appointment) {
+        return ReviewResponse.builder()
+                .id(review.getId())
+                .rating(review.getRating())
+                .comment(review.getComment())
+                .appointmentId(appointment.getId())
+                .clientName(appointment.getClient().getProfile() != null
+                        ? appointment.getClient().getProfile().getFullName()
+                        : null)
+                .serviceName(appointment.getService().getName())
+                .createdAt(review.getCreatedAt())
+                .build();
+    }
+
+    private PageResponse<AppointmentResponse> toPageResponse(Page<Appointment> page) {
+        List<AppointmentResponse> content = page.getContent().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+
+        return PageResponse.<AppointmentResponse>builder()
+                .content(content)
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .currentPage(page.getNumber())
+                .pageSize(page.getSize())
+                .first(page.isFirst())
+                .last(page.isLast())
+                .empty(page.isEmpty())
+                .build();
+    }
+
+    /**
+     * Get available time slots for a worker on a specific date
+     */
+    @Transactional(readOnly = true)
+    public AvailabilityResponse getWorkerAvailability(Long workerId, LocalDate date, Integer durationMinutes) {
+        Worker worker = workerRepository.findById(workerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Trabajador", workerId));
+
+        if (!worker.isActive()) {
+            throw new BadRequestException("El trabajador no está disponible");
+        }
+
+        // Default duration is 30 minutes
+        int duration = durationMinutes != null ? durationMinutes : 30;
+
+        // Get day of week (1=Monday to 7=Sunday in Java, convert to 0=Sunday for our system)
+        int dayOfWeek = date.getDayOfWeek().getValue() % 7; 
+
+        // Find worker's schedule for this day
+        List<WorkerSchedule> schedules = workerScheduleRepository.findByWorkerIdAndAvailableTrue(workerId);
+        WorkerSchedule daySchedule = schedules.stream()
+                .filter(s -> s.getDayOfWeek() == dayOfWeek)
+                .findFirst()
+                .orElse(null);
+
+        List<AvailabilityResponse.TimeSlot> slots = new ArrayList<>();
+
+        if (daySchedule != null) {
+            // Get existing appointments for this worker on this date
+            LocalDateTime dayStart = date.atStartOfDay();
+            LocalDateTime dayEnd = date.atTime(23, 59, 59);
+            
+            List<Appointment> existingAppointments = appointmentRepository.findByWorkerIdAndDateRange(
+                    workerId, dayStart, dayEnd);
+
+            // Generate time slots
+            LocalTime currentTime = daySchedule.getStartTime();
+            LocalTime endTime = daySchedule.getEndTime();
+
+            while (currentTime.plusMinutes(duration).isBefore(endTime) || 
+                   currentTime.plusMinutes(duration).equals(endTime)) {
+                
+                LocalTime slotEnd = currentTime.plusMinutes(duration);
+                final LocalTime slotStart = currentTime;
+                
+                // Check if slot overlaps with any existing appointment
+                boolean isAvailable = existingAppointments.stream()
+                        .filter(a -> a.getStatus() != AppointmentStatus.CANCELLED)
+                        .noneMatch(a -> {
+                            LocalTime apptStart = a.getStartTime().toLocalTime();
+                            LocalTime apptEnd = a.getEndTime().toLocalTime();
+                            // Check for overlap
+                            return !(slotEnd.isBefore(apptStart) || slotEnd.equals(apptStart) ||
+                                    slotStart.isAfter(apptEnd) || slotStart.equals(apptEnd));
+                        });
+
+                // Don't allow bookings in the past
+                if (date.equals(LocalDate.now()) && currentTime.isBefore(LocalTime.now())) {
+                    isAvailable = false;
+                }
+
+                slots.add(AvailabilityResponse.TimeSlot.builder()
+                        .startTime(currentTime)
+                        .endTime(slotEnd)
+                        .available(isAvailable)
+                        .build());
+
+                currentTime = currentTime.plusMinutes(30); // 30-minute intervals
+            }
+        }
+
+        String workerName = worker.getUser().getProfile() != null 
+                ? worker.getUser().getProfile().getFullName() 
+                : worker.getUser().getEmail();
+
+        return AvailabilityResponse.builder()
+                .workerId(workerId)
+                .workerName(workerName)
+                .date(date)
+                .availableSlots(slots)
+                .build();
+    }
+}
+
