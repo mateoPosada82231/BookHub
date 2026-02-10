@@ -57,7 +57,7 @@ Asegúrate de tener un contenedor de PostgreSQL corriendo en el puerto 5432 con 
 
 ```bash
 # Si no tienes postgres corriendo, puedes crear uno:
-docker run -d --name bookhub-db -e POSTGRES_USER=bookhub -e POSTGRES_PASSWORD=bookhub_secret -e POSTGRES_DB=bookhub -p 5432:5432 postgres:16-alpine
+docker run -d --name bookhub-db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=admin -e POSTGRES_DB=bookhub -p 5432:5432 postgres:16-alpine
 ```
 
 ### 2. Backend
