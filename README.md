@@ -4,7 +4,7 @@
 
 ## 🎯 Descripción
 
-HairHub es un sistema de gestión de citas que funciona como una red social de servicios. Los usuarios pueden:
+BookHub es un sistema de gestión de citas que funciona como una red social de servicios. Los usuarios pueden:
 
 - **Clientes**: Buscar negocios, filtrar por categoría, reservar citas
 - **Dueños**: Gestionar su negocio, ver estadísticas, administrar trabajadores
@@ -13,7 +13,7 @@ HairHub es un sistema de gestión de citas que funciona como una red social de s
 ## 🏗️ Arquitectura
 
 ```
-hairhub1.0/
+bookhub/
 ├── backend/           # Spring Boot API (Java 21)
 │   ├── src/main/java/ # Código fuente
 │   ├── src/test/      # Tests unitarios
@@ -22,7 +22,7 @@ hairhub1.0/
 │   ├── src/app/       # App Router (páginas)
 │   ├── src/components/# Componentes reutilizables
 │   └── src/lib/       # Utilidades y API client
-└── docker-compose.yml # PostgreSQL + pgAdmin
+└── docker-compose.yml # PostgreSQL (contenedor externo)
 ```
 
 ## 🚀 Tecnologías
@@ -53,8 +53,11 @@ hairhub1.0/
 
 ### 1. Base de Datos
 
+Asegúrate de tener un contenedor de PostgreSQL corriendo en el puerto 5432 con una base de datos `bookhub`.
+
 ```bash
-docker-compose up -d
+# Si no tienes postgres corriendo, puedes crear uno:
+docker run -d --name bookhub-db -e POSTGRES_USER=bookhub -e POSTGRES_PASSWORD=bookhub_secret -e POSTGRES_DB=bookhub -p 5432:5432 postgres:16-alpine
 ```
 
 ### 2. Backend
@@ -64,7 +67,7 @@ cd backend
 ./mvnw spring-boot:run
 ```
 
-Backend disponible en: `http://localhost:8080`
+Backend disponible en: `http://localhost:8082`
 
 ### 3. Frontend
 

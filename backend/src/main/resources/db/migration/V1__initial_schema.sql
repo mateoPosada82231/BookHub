@@ -1,5 +1,5 @@
 -- =====================================================
--- HairHub Database Schema - Initial Migration
+-- BookHub Database Schema - Initial Migration
 -- Version: V1
 -- Description: Creates all core tables for the platform
 -- =====================================================
