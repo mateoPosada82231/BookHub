@@ -6,9 +6,9 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowLeft,
   faStar,
+  faSpinner,
   faMapMarkerAlt,
   faClock,
-  faSpinner,
   faScissors,
   faUser,
   faCalendarAlt,
@@ -18,13 +18,14 @@ import {
   faExclamationTriangle,
   faTimes,
 } from "@fortawesome/free-solid-svg-icons";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Navbar } from "@/components/Navbar";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { Business, Service, Worker, WorkerSchedule, Review } from "@/types";
 import { ImageGallery } from "@/components/ImageGallery";
 import { ReviewList, ReviewsSummary } from "@/components/ReviewList";
+import Image from "next/image";
 import "@/styles/negocio.css";
 import "@/styles/reviews.css";
 
@@ -34,7 +35,7 @@ type BookingStep = "service" | "worker" | "datetime" | "confirm";
 // Generate time slots for a day
 function generateTimeSlots(
   schedule: WorkerSchedule | undefined,
-  duration: number
+  duration: number,
 ): string[] {
   if (!schedule || !schedule.is_available) return [];
 
@@ -96,7 +97,7 @@ function generateDates(): Date[] {
 function NegocioContent() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const businessId = Number(params.id);
 
   // State
@@ -155,8 +156,8 @@ function NegocioContent() {
     const loadReviews = async () => {
       try {
         setReviewsLoading(true);
-        const reviewsData = await api.getBusinessReviews(businessId);
-        setReviews(reviewsData);
+        const reviewsData = await api.getBusinessReviews(businessId, 0, 50);
+        setReviews(reviewsData.content);
       } catch (err) {
         console.error("Error loading reviews:", err);
       } finally {
@@ -175,7 +176,7 @@ function NegocioContent() {
 
     const dayOfWeek = getDayOfWeek(selectedDate);
     const schedule = selectedWorker.schedules?.find(
-      (s) => s.day_of_week === dayOfWeek
+      (s) => s.day_of_week === dayOfWeek,
     );
 
     return generateTimeSlots(schedule, selectedService.duration_minutes);
@@ -183,12 +184,13 @@ function NegocioContent() {
 
   // Handle booking
   const handleBooking = async () => {
-    if (
-      !selectedService ||
-      !selectedWorker ||
-      !selectedDate ||
-      !selectedTime
-    ) {
+    if (!isAuthenticated) {
+      router.push(
+        `/login?returnTo=${encodeURIComponent(`/negocio/${businessId}`)}`,
+      );
+      return;
+    }
+    if (!selectedService || !selectedWorker || !selectedDate || !selectedTime) {
       return;
     }
 
@@ -218,6 +220,13 @@ function NegocioContent() {
 
   // Go to next step
   const goToNextStep = () => {
+    // Require auth to proceed with booking
+    if (!isAuthenticated) {
+      router.push(
+        `/login?returnTo=${encodeURIComponent(`/negocio/${businessId}`)}`,
+      );
+      return;
+    }
     if (step === "service" && selectedService) setStep("worker");
     else if (step === "worker" && selectedWorker) setStep("datetime");
     else if (step === "datetime" && selectedDate && selectedTime)
@@ -245,10 +254,7 @@ function NegocioContent() {
   // Loading state
   if (loading) {
     return (
-      <div className="negocio-loading">
-        <FontAwesomeIcon icon={faSpinner} spin className="loading-icon" />
-        <p>Cargando negocio...</p>
-      </div>
+      <LoadingSpinner size="lg" message="Cargando negocio..." fullScreen />
     );
   }
 
@@ -290,7 +296,9 @@ function NegocioContent() {
               </div>
               <div className="detail-item">
                 <span className="detail-label">Profesional</span>
-                <span className="detail-value">{selectedWorker?.full_name}</span>
+                <span className="detail-value">
+                  {selectedWorker?.full_name}
+                </span>
               </div>
               <div className="detail-item">
                 <span className="detail-label">Fecha</span>
@@ -305,7 +313,10 @@ function NegocioContent() {
             </div>
 
             <div className="success-actions">
-              <button className="btn-primary" onClick={() => router.push("/mis-citas")}>
+              <button
+                className="btn-primary"
+                onClick={() => router.push("/mis-citas")}
+              >
                 Ver mis citas
               </button>
               <button className="btn-secondary" onClick={resetBooking}>
@@ -333,7 +344,14 @@ function NegocioContent() {
           <div className="business-hero">
             <div className="business-hero-image">
               {business.cover_image_url ? (
-                <img src={business.cover_image_url} alt={business.name} />
+                <Image
+                  src={business.cover_image_url}
+                  alt={business.name}
+                  fill
+                  sizes="100vw"
+                  style={{ objectFit: "cover" }}
+                  priority
+                />
               ) : (
                 <div className="hero-placeholder">
                   <FontAwesomeIcon icon={faScissors} />
@@ -365,19 +383,27 @@ function NegocioContent() {
 
             {/* Progress steps */}
             <div className="booking-progress">
-              <div className={`progress-step ${step === "service" ? "active" : ""} ${["worker", "datetime", "confirm"].includes(step) ? "completed" : ""}`}>
+              <div
+                className={`progress-step ${step === "service" ? "active" : ""} ${["worker", "datetime", "confirm"].includes(step) ? "completed" : ""}`}
+              >
                 <div className="step-number">1</div>
                 <span>Servicio</span>
               </div>
-              <div className={`progress-step ${step === "worker" ? "active" : ""} ${["datetime", "confirm"].includes(step) ? "completed" : ""}`}>
+              <div
+                className={`progress-step ${step === "worker" ? "active" : ""} ${["datetime", "confirm"].includes(step) ? "completed" : ""}`}
+              >
                 <div className="step-number">2</div>
                 <span>Profesional</span>
               </div>
-              <div className={`progress-step ${step === "datetime" ? "active" : ""} ${step === "confirm" ? "completed" : ""}`}>
+              <div
+                className={`progress-step ${step === "datetime" ? "active" : ""} ${step === "confirm" ? "completed" : ""}`}
+              >
                 <div className="step-number">3</div>
                 <span>Fecha y hora</span>
               </div>
-              <div className={`progress-step ${step === "confirm" ? "active" : ""}`}>
+              <div
+                className={`progress-step ${step === "confirm" ? "active" : ""}`}
+              >
                 <div className="step-number">4</div>
                 <span>Confirmar</span>
               </div>
@@ -432,7 +458,9 @@ function NegocioContent() {
                   <h3>Selecciona un profesional</h3>
                   <div className="workers-grid">
                     {workers.length === 0 ? (
-                      <p className="no-items">No hay profesionales disponibles</p>
+                      <p className="no-items">
+                        No hay profesionales disponibles
+                      </p>
                     ) : (
                       workers.map((worker) => (
                         <div
@@ -442,7 +470,16 @@ function NegocioContent() {
                         >
                           <div className="worker-avatar">
                             {worker.avatar_url ? (
-                              <img src={worker.avatar_url} alt={worker.full_name} />
+                              <Image
+                                src={worker.avatar_url}
+                                alt={worker.full_name}
+                                width={48}
+                                height={48}
+                                style={{
+                                  objectFit: "cover",
+                                  borderRadius: "50%",
+                                }}
+                              />
                             ) : (
                               <span>{worker.full_name.charAt(0)}</span>
                             )}
@@ -477,7 +514,7 @@ function NegocioContent() {
                           selectedDate?.toDateString() === date.toDateString();
                         const dayOfWeek = getDayOfWeek(date);
                         const hasSchedule = selectedWorker?.schedules?.some(
-                          (s) => s.day_of_week === dayOfWeek && s.is_available
+                          (s) => s.day_of_week === dayOfWeek && s.is_available,
                         );
 
                         return (
@@ -537,67 +574,76 @@ function NegocioContent() {
 
                   <div className="booking-summary">
                     <div className="summary-item">
-                      <FontAwesomeIcon icon={faScissors} className="summary-icon" />
+                      <FontAwesomeIcon
+                        icon={faScissors}
+                        className="summary-icon"
+                      />
                       <div>
                         <span className="summary-label">Servicio</span>
-                            <span className="summary-value">
-                              {selectedService?.name}
-                            </span>
-                          </div>
-                          <span className="summary-price">
-                            ${selectedService?.price.toLocaleString("es-CO")}
-                          </span>
-                        </div>
-
-                        <div className="summary-item">
-                          <FontAwesomeIcon icon={faUser} className="summary-icon" />
-                          <div>
-                            <span className="summary-label">Profesional</span>
-                            <span className="summary-value">
-                              {selectedWorker?.full_name}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="summary-item">
-                          <FontAwesomeIcon icon={faCalendarAlt} className="summary-icon" />
-                          <div>
-                            <span className="summary-label">Fecha y hora</span>
-                            <span className="summary-value">
-                              {selectedDate && formatDateDisplay(selectedDate)} a las{" "}
-                              {selectedTime}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="summary-item">
-                          <FontAwesomeIcon icon={faClock} className="summary-icon" />
-                          <div>
-                            <span className="summary-label">Duración</span>
-                            <span className="summary-value">
-                              {selectedService?.duration_minutes} minutos
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="booking-notes">
-                        <label htmlFor="notes">Notas adicionales (opcional)</label>
-                        <textarea
-                          id="notes"
-                          value={bookingNotes}
-                          onChange={(e) => setBookingNotes(e.target.value)}
-                          placeholder="Ej: Prefiero un corte más corto en los lados..."
-                          rows={3}
-                        />
-                      </div>
-
-                      <div className="booking-total">
-                        <span>Total</span>
-                        <span className="total-price">
-                          ${selectedService?.price.toLocaleString("es-CO")}
+                        <span className="summary-value">
+                          {selectedService?.name}
                         </span>
                       </div>
+                      <span className="summary-price">
+                        ${selectedService?.price.toLocaleString("es-CO")}
+                      </span>
+                    </div>
+
+                    <div className="summary-item">
+                      <FontAwesomeIcon icon={faUser} className="summary-icon" />
+                      <div>
+                        <span className="summary-label">Profesional</span>
+                        <span className="summary-value">
+                          {selectedWorker?.full_name}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="summary-item">
+                      <FontAwesomeIcon
+                        icon={faCalendarAlt}
+                        className="summary-icon"
+                      />
+                      <div>
+                        <span className="summary-label">Fecha y hora</span>
+                        <span className="summary-value">
+                          {selectedDate && formatDateDisplay(selectedDate)} a
+                          las {selectedTime}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="summary-item">
+                      <FontAwesomeIcon
+                        icon={faClock}
+                        className="summary-icon"
+                      />
+                      <div>
+                        <span className="summary-label">Duración</span>
+                        <span className="summary-value">
+                          {selectedService?.duration_minutes} minutos
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="booking-notes">
+                    <label htmlFor="notes">Notas adicionales (opcional)</label>
+                    <textarea
+                      id="notes"
+                      value={bookingNotes}
+                      onChange={(e) => setBookingNotes(e.target.value)}
+                      placeholder="Ej: Prefiero un corte más corto en los lados..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="booking-total">
+                    <span>Total</span>
+                    <span className="total-price">
+                      ${selectedService?.price.toLocaleString("es-CO")}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
@@ -659,9 +705,9 @@ function NegocioContent() {
 
           {/* Gallery section */}
           {business.gallery_images && business.gallery_images.length > 0 && (
-            <ImageGallery 
-              images={business.gallery_images} 
-              businessName={business.name} 
+            <ImageGallery
+              images={business.gallery_images}
+              businessName={business.name}
             />
           )}
 
@@ -669,9 +715,9 @@ function NegocioContent() {
           <div className="reviews-section">
             <div className="reviews-section-header">
               <h3>Reseñas</h3>
-              <ReviewsSummary 
-                averageRating={business.average_rating} 
-                totalReviews={business.total_reviews} 
+              <ReviewsSummary
+                averageRating={business.average_rating}
+                totalReviews={business.total_reviews}
               />
             </div>
             <ReviewList reviews={reviews} loading={reviewsLoading} />
@@ -683,9 +729,5 @@ function NegocioContent() {
 }
 
 export default function NegocioPage() {
-  return (
-    <ProtectedRoute>
-      <NegocioContent />
-    </ProtectedRoute>
-  );
+  return <NegocioContent />;
 }

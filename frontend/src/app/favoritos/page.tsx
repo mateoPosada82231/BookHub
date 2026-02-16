@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Loader2, RefreshCw, AlertCircle, X, ArrowRight } from "lucide-react";
+import { Heart, RefreshCw, AlertCircle, X, ArrowRight } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Navbar } from "@/components/Navbar";
 import { EstablishmentCard } from "@/components/EstablishmentCard";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { useMyFavorites } from "@/hooks";
 import { api } from "@/lib/api";
-import { BusinessSummary } from "@/types";
 import "@/styles/favoritos.css";
 
 const fadeIn = {
@@ -28,45 +29,28 @@ const staggerContainer = {
 function FavoritosContent() {
   const { user } = useAuth();
   const router = useRouter();
-  const [favorites, setFavorites] = useState<BusinessSummary[]>([]);
-  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: favorites = [],
+    error: swrError,
+    isLoading,
+    mutate,
+  } = useMyFavorites();
+  const [localError, setLocalError] = useState<string | null>(null);
 
-  const loadFavorites = useCallback(async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const data = await api.getAllMyFavorites();
-      setFavorites(data);
-      setFavoriteIds(new Set(data.map(b => b.id)));
-    } catch (err: any) {
-      setError(err.message || "Error al cargar los favoritos");
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      loadFavorites();
-    }
-  }, [user, loadFavorites]);
+  const favoriteIds = new Set(favorites.map((b) => b.id));
+  const error =
+    localError ||
+    (swrError ? swrError.message || "Error al cargar los favoritos" : null);
 
   const handleToggleFavorite = async (businessId: number) => {
     try {
       await api.removeFavorite(businessId);
-      setFavorites(prev => prev.filter(b => b.id !== businessId));
-      setFavoriteIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(businessId);
-        return newSet;
-      });
+      mutate(
+        favorites.filter((b) => b.id !== businessId),
+        false,
+      );
     } catch (err: any) {
-      setError(err.message || "Error al eliminar de favoritos");
+      setLocalError(err.message || "Error al eliminar de favoritos");
     }
   };
 
@@ -94,16 +78,19 @@ function FavoritosContent() {
                 <h1 className="favoritos-title">Mis Favoritos</h1>
               </div>
               <p className="favoritos-subtitle">
-                {favorites.length} {favorites.length === 1 ? "lugar guardado" : "lugares guardados"}
+                {favorites.length}{" "}
+                {favorites.length === 1
+                  ? "lugar guardado"
+                  : "lugares guardados"}
               </p>
             </div>
             <button
-              onClick={loadFavorites}
-              disabled={loading}
+              onClick={() => mutate()}
+              disabled={isLoading}
               className="favoritos-refresh-btn"
               title="Recargar favoritos"
             >
-              <RefreshCw className={loading ? "animate-spin" : ""} />
+              <RefreshCw className={isLoading ? "animate-spin" : ""} />
             </button>
           </motion.div>
 
@@ -118,7 +105,10 @@ function FavoritosContent() {
               >
                 <AlertCircle className="h-5 w-5 flex-shrink-0" />
                 <span>{error}</span>
-                <button onClick={() => setError(null)} className="favoritos-error-close">
+                <button
+                  onClick={() => setLocalError(null)}
+                  className="favoritos-error-close"
+                >
                   <X className="h-4 w-4" />
                 </button>
               </motion.div>
@@ -126,14 +116,16 @@ function FavoritosContent() {
           </AnimatePresence>
 
           {/* Loading State */}
-          {loading && (
-            <div className="favoritos-loading">
-              <Loader2 className="animate-spin" />
-            </div>
+          {isLoading && (
+            <LoadingSpinner
+              size="lg"
+              message="Cargando favoritos..."
+              fullScreen
+            />
           )}
 
           {/* Favorites Grid */}
-          {!loading && favorites.length > 0 && (
+          {!isLoading && favorites.length > 0 && (
             <motion.div
               initial="hidden"
               animate="visible"
@@ -141,8 +133,8 @@ function FavoritosContent() {
               className="favoritos-grid"
             >
               {favorites.map((business, index) => (
-                <motion.div 
-                  key={business.id} 
+                <motion.div
+                  key={business.id}
                   variants={fadeIn}
                   className="favoritos-grid-item"
                   style={{ animationDelay: `${index * 50}ms` }}
@@ -159,7 +151,7 @@ function FavoritosContent() {
           )}
 
           {/* Empty State */}
-          {!loading && favorites.length === 0 && (
+          {!isLoading && favorites.length === 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -172,7 +164,8 @@ function FavoritosContent() {
                 No tienes favoritos guardados
               </h3>
               <p className="favoritos-empty-text">
-                Explora los establecimientos y guarda tus favoritos tocando el corazón para encontrarlos fácilmente después
+                Explora los establecimientos y guarda tus favoritos tocando el
+                corazón para encontrarlos fácilmente después
               </p>
               <button
                 onClick={() => router.push("/")}

@@ -1,5 +1,7 @@
 package com.bookhub.backend.domain.booking;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,4 +19,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     @Query("SELECT r FROM Review r JOIN r.appointment a JOIN a.worker w WHERE w.business.id = :businessId ORDER BY r.createdAt DESC")
     List<Review> findByBusinessId(@Param("businessId") Long businessId);
+
+    @Query("SELECT r FROM Review r JOIN r.appointment a JOIN a.worker w WHERE w.business.id = :businessId")
+    Page<Review> findByBusinessIdPaged(@Param("businessId") Long businessId, Pageable pageable);
 }

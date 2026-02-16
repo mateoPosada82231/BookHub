@@ -1,6 +1,7 @@
 "use client";
 
 import { Star, User } from "lucide-react";
+import Image from "next/image";
 import { Review } from "@/types";
 
 interface ReviewListProps {
@@ -39,8 +40,14 @@ function ReviewCard({ review }: { review: Review }) {
         <div className="review-author">
           <div className="review-avatar">
             {review.client_avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={review.client_avatar_url} alt={review.client_name} />
+              <Image
+                src={review.client_avatar_url}
+                alt={review.client_name}
+                width={40}
+                height={40}
+                className="review-avatar-img"
+                style={{ objectFit: "cover", borderRadius: "50%" }}
+              />
             ) : (
               <User size={20} />
             )}
@@ -114,7 +121,10 @@ interface ReviewsSummaryProps {
   totalReviews: number;
 }
 
-export function ReviewsSummary({ averageRating, totalReviews }: ReviewsSummaryProps) {
+export function ReviewsSummary({
+  averageRating,
+  totalReviews,
+}: ReviewsSummaryProps) {
   return (
     <div className="reviews-summary">
       <div className="reviews-summary-rating">
@@ -124,7 +134,9 @@ export function ReviewsSummary({ averageRating, totalReviews }: ReviewsSummaryPr
         </span>
       </div>
       <div className="reviews-summary-info">
-        <span className="reviews-count">{totalReviews} reseña{totalReviews !== 1 ? "s" : ""}</span>
+        <span className="reviews-count">
+          {totalReviews} reseña{totalReviews !== 1 ? "s" : ""}
+        </span>
         {totalReviews > 0 && (
           <div className="reviews-mini-stars">
             <StarRating rating={Math.round(averageRating || 0)} />

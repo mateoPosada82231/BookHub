@@ -44,6 +44,7 @@ public class SecurityConfig {
                                 "/api/businesses/{businessId:[\\d]+}/workers",
                                 "/api/businesses/{businessId:[\\d]+}/workers/{workerId:[\\d]+}",
                                 "/api/businesses/{businessId:[\\d]+}/reviews",
+                                "/api/businesses/{businessId:[\\d]+}/images",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",

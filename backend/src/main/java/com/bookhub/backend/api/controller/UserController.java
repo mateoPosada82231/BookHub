@@ -3,6 +3,8 @@ package com.bookhub.backend.api.controller;
 import com.bookhub.backend.api.dto.user.*;
 import com.bookhub.backend.api.service.UserService;
 import com.bookhub.backend.config.SecurityUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Tag(name = "Users", description = "Gestión de perfil de usuario")
 public class UserController {
 
     private final UserService userService;
@@ -20,6 +23,7 @@ public class UserController {
      * Get current user profile
      */
     @GetMapping("/me")
+    @Operation(summary = "Obtener mi perfil", description = "Retorna el perfil del usuario autenticado")
     public ResponseEntity<UserResponse> getCurrentUser(
             @AuthenticationPrincipal SecurityUser user) {
         return ResponseEntity.ok(userService.getCurrentUser(user.getId()));
@@ -29,6 +33,7 @@ public class UserController {
      * Get user by ID
      */
     @GetMapping("/{id}")
+    @Operation(summary = "Obtener usuario por ID")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
@@ -37,6 +42,7 @@ public class UserController {
      * Update current user profile
      */
     @PutMapping("/me")
+    @Operation(summary = "Actualizar mi perfil")
     public ResponseEntity<UserResponse> updateProfile(
             @AuthenticationPrincipal SecurityUser user,
             @Valid @RequestBody UpdateProfileRequest request) {
@@ -48,6 +54,7 @@ public class UserController {
      * Change password
      */
     @PostMapping("/me/change-password")
+    @Operation(summary = "Cambiar contraseña")
     public ResponseEntity<Void> changePassword(
             @AuthenticationPrincipal SecurityUser user,
             @Valid @RequestBody ChangePasswordRequest request) {
@@ -60,6 +67,7 @@ public class UserController {
      * Find user by email (for adding workers)
      */
     @GetMapping("/search")
+    @Operation(summary = "Buscar usuario por email")
     public ResponseEntity<UserResponse> findByEmail(@RequestParam String email) {
         return ResponseEntity.ok(userService.findByEmail(email));
     }

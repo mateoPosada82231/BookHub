@@ -3,31 +3,38 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBookOpen, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faBookOpen } from "@fortawesome/free-solid-svg-icons";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { SkeletonGrid } from "@/components/ui/Skeleton";
 import { Navbar } from "@/components/Navbar";
 import { SearchBar } from "@/components/SearchBar";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { EstablishmentGrid } from "@/components/EstablishmentGrid";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
-import type { BusinessSummary, BusinessCategory, CategoryOption } from "@/types";
+import type {
+  BusinessSummary,
+  BusinessCategory,
+  CategoryOption,
+} from "@/types";
 import "@/styles/home.css";
 
 function HomePageContent() {
   const router = useRouter();
-  
+  const { isAuthenticated } = useAuth();
+
   // Estados
   const [searchQuery, setSearchQuery] = useState("");
   const [locationQuery, setLocationQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
-  
+
   // Estados de datos
   const [businesses, setBusinesses] = useState<BusinessSummary[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Paginación
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -38,7 +45,9 @@ function HomePageContent() {
       try {
         const [cats, favIds] = await Promise.all([
           api.getCategories(),
-          api.getMyFavoriteIds().catch(() => [] as number[])
+          isAuthenticated
+            ? api.getMyFavoriteIds().catch(() => [] as number[])
+            : Promise.resolve([] as number[]),
         ]);
         setCategories(cats);
         setFavorites(new Set(favIds));
@@ -47,7 +56,7 @@ function HomePageContent() {
       }
     };
     loadInitialData();
-  }, []);
+  }, [isAuthenticated]);
 
   // Cargar negocios
   const loadBusinesses = useCallback(async () => {
@@ -56,7 +65,10 @@ function HomePageContent() {
     try {
       const response = await api.searchBusinesses({
         query: searchQuery || undefined,
-        category: selectedCategory !== "all" ? (selectedCategory as BusinessCategory) : undefined,
+        category:
+          selectedCategory !== "all"
+            ? (selectedCategory as BusinessCategory)
+            : undefined,
         city: locationQuery || undefined,
         page,
         size: 12,
@@ -65,7 +77,9 @@ function HomePageContent() {
       setTotalPages(response.total_pages);
     } catch (err) {
       console.error("Error loading businesses:", err);
-      setError("Error al cargar los establecimientos. Por favor, intenta de nuevo.");
+      setError(
+        "Error al cargar los establecimientos. Por favor, intenta de nuevo.",
+      );
     } finally {
       setLoading(false);
     }
@@ -76,7 +90,7 @@ function HomePageContent() {
     const timer = setTimeout(() => {
       loadBusinesses();
     }, 300); // Debounce de 300ms
-    
+
     return () => clearTimeout(timer);
   }, [loadBusinesses]);
 
@@ -101,26 +115,38 @@ function HomePageContent() {
     setPage(0);
   }, []);
 
-  const handleToggleFavorite = useCallback(async (id: number) => {
-    try {
-      const result = await api.toggleFavorite(id);
-      setFavorites((prev) => {
-        const newSet = new Set(prev);
-        if (result.isFavorite) {
-          newSet.add(id);
-        } else {
-          newSet.delete(id);
-        }
-        return newSet;
-      });
-    } catch (err) {
-      console.error("Error toggling favorite:", err);
-    }
-  }, []);
+  const handleToggleFavorite = useCallback(
+    async (id: number) => {
+      if (!isAuthenticated) {
+        router.push(
+          `/login?returnTo=${encodeURIComponent(window.location.pathname)}`,
+        );
+        return;
+      }
+      try {
+        const result = await api.toggleFavorite(id);
+        setFavorites((prev) => {
+          const newSet = new Set(prev);
+          if (result.isFavorite) {
+            newSet.add(id);
+          } else {
+            newSet.delete(id);
+          }
+          return newSet;
+        });
+      } catch (err) {
+        console.error("Error toggling favorite:", err);
+      }
+    },
+    [isAuthenticated, router],
+  );
 
-  const handleViewDetails = useCallback((id: number) => {
-    router.push(`/negocio/${id}`);
-  }, [router]);
+  const handleViewDetails = useCallback(
+    (id: number) => {
+      router.push(`/negocio/${id}`);
+    },
+    [router],
+  );
 
   const handleFilterClick = useCallback(() => {
     // TODO: Implementar modal de filtros avanzados
@@ -142,7 +168,8 @@ function HomePageContent() {
                 <span className="home-title-accent">lugares</span>
               </h1>
               <p className="home-subtitle">
-                Barberías, spas, salones de belleza y más. Todo en un solo lugar.
+                Barberías, spas, salones de belleza y más. Todo en un solo
+                lugar.
               </p>
             </div>
 
@@ -167,8 +194,7 @@ function HomePageContent() {
         {/* Estado de carga */}
         {loading && (
           <div className="home-loading">
-            <FontAwesomeIcon icon={faSpinner} spin className="home-loading-icon" />
-            <p>Cargando establecimientos...</p>
+            <SkeletonGrid count={6} />
           </div>
         )}
 
@@ -207,7 +233,9 @@ function HomePageContent() {
                   Página {page + 1} de {totalPages}
                 </span>
                 <button
-                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  onClick={() =>
+                    setPage((p) => Math.min(totalPages - 1, p + 1))
+                  }
                   disabled={page >= totalPages - 1}
                   className="pagination-btn"
                 >
@@ -219,7 +247,10 @@ function HomePageContent() {
             {/* Mensaje de vacío */}
             {businesses.length === 0 && (
               <div className="home-empty">
-                <p>No se encontraron establecimientos con los filtros seleccionados.</p>
+                <p>
+                  No se encontraron establecimientos con los filtros
+                  seleccionados.
+                </p>
               </div>
             )}
           </>
@@ -230,7 +261,10 @@ function HomePageContent() {
       <footer className="home-footer">
         <div className="home-footer-content">
           <div className="home-footer-logo">
-            <FontAwesomeIcon icon={faBookOpen} className="home-footer-logo-icon" />
+            <FontAwesomeIcon
+              icon={faBookOpen}
+              className="home-footer-logo-icon"
+            />
             <span className="home-footer-logo-text">BOOKHUB</span>
           </div>
           <p className="home-footer-copyright">
@@ -242,11 +276,7 @@ function HomePageContent() {
   );
 }
 
-// Componente principal envuelto en ProtectedRoute
+// Componente principal - accesible sin autenticación (landing page)
 export default function HomePage() {
-  return (
-    <ProtectedRoute>
-      <HomePageContent />
-    </ProtectedRoute>
-  );
+  return <HomePageContent />;
 }

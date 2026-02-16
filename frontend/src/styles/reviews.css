@@ -421,8 +421,12 @@
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* === IMAGE GALLERY === */
@@ -468,7 +472,7 @@
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: auto auto;
   }
-  
+
   .gallery-item-large {
     grid-column: span 2;
     grid-row: span 2;
@@ -562,8 +566,9 @@
 }
 
 .lightbox-content {
-  max-width: 90vw;
-  max-height: 85vh;
+  position: relative;
+  width: 90vw;
+  height: 85vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -749,7 +754,7 @@
   .add-image-form .form-row {
     flex-direction: row;
   }
-  
+
   .add-image-form .form-group {
     flex: 1;
   }

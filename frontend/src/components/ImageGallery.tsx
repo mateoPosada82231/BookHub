@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, X, Image as ImageIcon } from "lucide-react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ImageGalleryProps {
@@ -26,13 +27,17 @@ export function ImageGallery({ images, businessName }: ImageGalleryProps) {
 
   const goToPrevious = () => {
     if (selectedIndex !== null) {
-      setSelectedIndex(selectedIndex === 0 ? images.length - 1 : selectedIndex - 1);
+      setSelectedIndex(
+        selectedIndex === 0 ? images.length - 1 : selectedIndex - 1,
+      );
     }
   };
 
   const goToNext = () => {
     if (selectedIndex !== null) {
-      setSelectedIndex(selectedIndex === images.length - 1 ? 0 : selectedIndex + 1);
+      setSelectedIndex(
+        selectedIndex === images.length - 1 ? 0 : selectedIndex + 1,
+      );
     }
   };
 
@@ -49,18 +54,27 @@ export function ImageGallery({ images, businessName }: ImageGalleryProps) {
         <div className="gallery-header">
           <ImageIcon size={20} />
           <h3>Galería</h3>
-          <span className="gallery-count">{images.length} foto{images.length !== 1 ? "s" : ""}</span>
+          <span className="gallery-count">
+            {images.length} foto{images.length !== 1 ? "s" : ""}
+          </span>
         </div>
-        
+
         <div className="gallery-grid">
           {images.slice(0, 6).map((imageUrl, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className={`gallery-item ${index === 0 ? "gallery-item-large" : ""}`}
               onClick={() => openLightbox(index)}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imageUrl} alt={`${businessName || "Negocio"} - Foto ${index + 1}`} />
+              {" "}
+              <Image
+                src={imageUrl}
+                alt={`${businessName || "Negocio"} - Foto ${index + 1}`}
+                fill
+                sizes="(max-width: 768px) 50vw, 33vw"
+                className="gallery-img"
+                style={{ objectFit: "cover" }}
+              />
               {index === 5 && images.length > 6 && (
                 <div className="gallery-more-overlay">
                   <span>+{images.length - 6}</span>
@@ -87,9 +101,12 @@ export function ImageGallery({ images, businessName }: ImageGalleryProps) {
               <X size={24} />
             </button>
 
-            <button 
+            <button
               className="lightbox-nav lightbox-prev"
-              onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                goToPrevious();
+              }}
             >
               <ChevronLeft size={32} />
             </button>
@@ -102,19 +119,25 @@ export function ImageGallery({ images, businessName }: ImageGalleryProps) {
               className="lightbox-content"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={images[selectedIndex]} 
-                alt={`${businessName || "Negocio"} - Foto ${selectedIndex + 1}`} 
+              <Image
+                src={images[selectedIndex]}
+                alt={`${businessName || "Negocio"} - Foto ${selectedIndex + 1}`}
+                fill
+                sizes="90vw"
+                style={{ objectFit: "contain" }}
+                priority
               />
               <div className="lightbox-counter">
                 {selectedIndex + 1} / {images.length}
               </div>
             </motion.div>
 
-            <button 
+            <button
               className="lightbox-nav lightbox-next"
-              onClick={(e) => { e.stopPropagation(); goToNext(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                goToNext();
+              }}
             >
               <ChevronRight size={32} />
             </button>

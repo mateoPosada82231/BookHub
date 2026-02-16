@@ -5,6 +5,9 @@ import com.bookhub.backend.api.dto.common.PageResponse;
 import com.bookhub.backend.api.service.BusinessService;
 import com.bookhub.backend.config.SecurityUser;
 import com.bookhub.backend.domain.business.BusinessCategory;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/businesses")
 @RequiredArgsConstructor
+@Tag(name = "Businesses", description = "Gestión de negocios")
 public class BusinessController {
 
     private final BusinessService businessService;
@@ -26,6 +30,7 @@ public class BusinessController {
      * Search businesses with filters (public)
      */
     @GetMapping("/search")
+    @Operation(summary = "Buscar negocios", description = "Búsqueda pública paginada por nombre, categoría o ciudad")
     public ResponseEntity<PageResponse<BusinessSummaryResponse>> searchBusinesses(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) BusinessCategory category,
@@ -40,6 +45,7 @@ public class BusinessController {
      * Get business by ID (public)
      */
     @GetMapping("/{id}")
+    @Operation(summary = "Obtener negocio por ID", description = "Retorna el detalle completo de un negocio")
     public ResponseEntity<BusinessResponse> getBusinessById(@PathVariable Long id) {
         return ResponseEntity.ok(businessService.getBusinessById(id));
     }
@@ -49,6 +55,7 @@ public class BusinessController {
      */
     @GetMapping("/my")
     @PreAuthorize("hasRole('OWNER')")
+    @Operation(summary = "Mis negocios", description = "Lista los negocios del propietario actual")
     public ResponseEntity<List<BusinessSummaryResponse>> getMyBusinesses(
             @AuthenticationPrincipal SecurityUser user) {
         return ResponseEntity.ok(businessService.getMyBusinesses(user.getId()));
@@ -59,6 +66,7 @@ public class BusinessController {
      */
     @PostMapping
     @PreAuthorize("hasRole('OWNER')")
+    @Operation(summary = "Crear negocio", description = "Registra un nuevo negocio (solo OWNER)")
     public ResponseEntity<BusinessResponse> createBusiness(
             @AuthenticationPrincipal SecurityUser user,
             @Valid @RequestBody CreateBusinessRequest request) {
@@ -72,6 +80,7 @@ public class BusinessController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('OWNER')")
+    @Operation(summary = "Actualizar negocio")
     public ResponseEntity<BusinessResponse> updateBusiness(
             @PathVariable Long id,
             @AuthenticationPrincipal SecurityUser user,
@@ -85,6 +94,7 @@ public class BusinessController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('OWNER')")
+    @Operation(summary = "Eliminar negocio", description = "Desactiva un negocio (soft delete)")
     public ResponseEntity<Void> deleteBusiness(
             @PathVariable Long id,
             @AuthenticationPrincipal SecurityUser user) {
@@ -97,6 +107,7 @@ public class BusinessController {
      * Get all business categories
      */
     @GetMapping("/categories")
+    @Operation(summary = "Listar categorías", description = "Retorna todas las categorías de negocio disponibles")
     public ResponseEntity<List<CategoryResponse>> getCategories() {
         List<CategoryResponse> categories = java.util.Arrays.stream(BusinessCategory.values())
                 .map(c -> new CategoryResponse(c.name(), c.getDisplayName()))

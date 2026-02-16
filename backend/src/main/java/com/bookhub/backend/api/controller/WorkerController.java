@@ -3,6 +3,8 @@ package com.bookhub.backend.api.controller;
 import com.bookhub.backend.api.dto.business.*;
 import com.bookhub.backend.api.service.WorkerService;
 import com.bookhub.backend.config.SecurityUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/businesses/{businessId}/workers")
 @RequiredArgsConstructor
+@Tag(name = "Workers", description = "Gestión de trabajadores de un negocio")
 public class WorkerController {
 
     private final WorkerService workerService;
@@ -24,6 +27,7 @@ public class WorkerController {
      * Get all workers for a business (public)
      */
     @GetMapping
+    @Operation(summary = "Listar trabajadores de un negocio")
     public ResponseEntity<List<WorkerResponse>> getWorkers(@PathVariable Long businessId) {
         return ResponseEntity.ok(workerService.getWorkersByBusiness(businessId));
     }
@@ -32,6 +36,7 @@ public class WorkerController {
      * Get worker by ID
      */
     @GetMapping("/{workerId}")
+    @Operation(summary = "Obtener trabajador por ID")
     public ResponseEntity<WorkerResponse> getWorkerById(
             @PathVariable Long businessId,
             @PathVariable Long workerId) {
@@ -43,6 +48,7 @@ public class WorkerController {
      */
     @PostMapping
     @PreAuthorize("hasRole('OWNER')")
+    @Operation(summary = "Agregar trabajador")
     public ResponseEntity<WorkerResponse> addWorker(
             @PathVariable Long businessId,
             @AuthenticationPrincipal SecurityUser user,
@@ -57,6 +63,7 @@ public class WorkerController {
      */
     @PutMapping("/{workerId}")
     @PreAuthorize("hasRole('OWNER')")
+    @Operation(summary = "Actualizar trabajador")
     public ResponseEntity<WorkerResponse> updateWorker(
             @PathVariable Long businessId,
             @PathVariable Long workerId,
@@ -71,6 +78,7 @@ public class WorkerController {
      */
     @DeleteMapping("/{workerId}")
     @PreAuthorize("hasRole('OWNER')")
+    @Operation(summary = "Eliminar trabajador")
     public ResponseEntity<Void> removeWorker(
             @PathVariable Long businessId,
             @PathVariable Long workerId,
@@ -85,6 +93,7 @@ public class WorkerController {
      */
     @PutMapping("/{workerId}/schedule")
     @PreAuthorize("hasAnyRole('OWNER', 'WORKER')")
+    @Operation(summary = "Configurar horario del trabajador")
     public ResponseEntity<WorkerResponse> setWorkerSchedule(
             @PathVariable Long businessId,
             @PathVariable Long workerId,

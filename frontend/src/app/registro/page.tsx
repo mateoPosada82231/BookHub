@@ -12,7 +12,7 @@ type RegisterRole = "CLIENT" | "OWNER";
 
 function RegisterPageContent() {
   const router = useRouter();
-  
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -28,7 +28,9 @@ function RegisterPageContent() {
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -42,9 +44,24 @@ function RegisterPageContent() {
     setError("");
     setSuccess("");
 
+    // Validar longitud mínima de contraseña
+    if (formData.password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres");
+      setIsLoading(false);
+      return;
+    }
+
     // Validar que las contraseñas coincidan
     if (formData.password !== formData.confirmPassword) {
       setError("Las contraseñas no coinciden");
+      setIsLoading(false);
+      return;
+    }
+
+    // Validar formato de teléfono (al menos 7 dígitos)
+    const phoneDigits = formData.phone.replace(/\D/g, "");
+    if (phoneDigits.length < 7) {
+      setError("Ingresa un número de teléfono válido (mínimo 7 dígitos)");
       setIsLoading(false);
       return;
     }
@@ -59,7 +76,9 @@ function RegisterPageContent() {
 
     try {
       await api.register(registerData);
-      setSuccess("¡Registro exitoso! Serás redirigido a la página de inicio de sesión.");
+      setSuccess(
+        "¡Registro exitoso! Serás redirigido a la página de inicio de sesión.",
+      );
       setTimeout(() => {
         router.push("/login");
       }, 2000);
@@ -100,7 +119,9 @@ function RegisterPageContent() {
                 onClick={() => setFormData({ ...formData, role: "OWNER" })}
               >
                 <span className="role-option-title">Dueño de Negocio</span>
-                <span className="role-option-desc">Quiero gestionar mi negocio</span>
+                <span className="role-option-desc">
+                  Quiero gestionar mi negocio
+                </span>
               </button>
             </div>
           </div>

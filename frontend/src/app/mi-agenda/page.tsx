@@ -17,9 +17,13 @@ import {
   faCheck,
   faTimesCircle,
 } from "@fortawesome/free-solid-svg-icons";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { notify } from "@/components/ui/toast";
 import { api } from "@/lib/api";
+import Image from "next/image";
 import { Worker, Appointment, Business } from "@/types";
 import "@/styles/mi-agenda.css";
 
@@ -100,7 +104,7 @@ function AppointmentCard({
 }) {
   const isPast = new Date(appointment.end_time) < new Date();
   const canModify = !["COMPLETED", "CANCELLED", "NO_SHOW"].includes(
-    appointment.status
+    appointment.status,
   );
   const appointmentDate = getDateFromDatetime(appointment.start_time);
 
@@ -147,7 +151,10 @@ function AppointmentCard({
         <div className="price-info">
           <span className="price-label">Precio</span>
           <span className="price-value">
-            ${(appointment.service_price ?? appointment.total_price)?.toLocaleString("es-CO") || "0"}
+            $
+            {(
+              appointment.service_price ?? appointment.total_price
+            )?.toLocaleString("es-CO") || "0"}
           </span>
         </div>
       </div>
@@ -204,8 +211,18 @@ function MiAgendaContent() {
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [activeTab, setActiveTab] = useState<"upcoming" | "history">("upcoming");
-  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
+  const [activeTab, setActiveTab] = useState<"upcoming" | "history">(
+    "upcoming",
+  );
+  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(
+    null,
+  );
+  const [confirmAction, setConfirmAction] = useState<{
+    appointmentId: number;
+    status: "COMPLETED" | "NO_SHOW" | "CANCELLED";
+    title: string;
+    message: string;
+  } | null>(null);
 
   // Load worker profiles on mount
   useEffect(() => {
@@ -264,7 +281,7 @@ function MiAgendaContent() {
   // Update appointment status
   const handleUpdateStatus = async (
     appointmentId: number,
-    status: "COMPLETED" | "NO_SHOW" | "CANCELLED"
+    status: "COMPLETED" | "NO_SHOW" | "CANCELLED",
   ) => {
     try {
       setIsUpdating(true);
@@ -274,12 +291,47 @@ function MiAgendaContent() {
         await api.updateAppointment(appointmentId, { status });
       }
       await loadAppointments();
-    } catch (err) {
+      notify.success(
+        status === "COMPLETED"
+          ? "Cita marcada como completada"
+          : status === "NO_SHOW"
+            ? "Cita marcada como no asistió"
+            : "Cita cancelada correctamente",
+      );
+    } catch (err: any) {
       console.error("Error updating appointment:", err);
-      setError("No se pudo actualizar la cita");
+      notify.error(err.message || "No se pudo actualizar la cita");
     } finally {
       setIsUpdating(false);
+      setConfirmAction(null);
     }
+  };
+
+  // Request confirmation before updating
+  const requestStatusUpdate = (
+    appointmentId: number,
+    status: "COMPLETED" | "NO_SHOW" | "CANCELLED",
+  ) => {
+    const configs = {
+      COMPLETED: {
+        title: "Completar cita",
+        message: "¿Confirmas que esta cita fue completada exitosamente?",
+      },
+      NO_SHOW: {
+        title: "Marcar como no asistió",
+        message: "¿Confirmas que el cliente no asistió a esta cita?",
+      },
+      CANCELLED: {
+        title: "Cancelar cita",
+        message:
+          "¿Estás seguro de cancelar esta cita? Se notificará al cliente.",
+      },
+    };
+    setConfirmAction({
+      appointmentId,
+      status,
+      ...configs[status],
+    });
   };
 
   // Group appointments by date
@@ -292,7 +344,7 @@ function MiAgendaContent() {
       groups[date].push(appointment);
       return groups;
     },
-    {} as Record<string, Appointment[]>
+    {} as Record<string, Appointment[]>,
   );
 
   // Sort dates
@@ -305,15 +357,7 @@ function MiAgendaContent() {
   // Loading state
   if (loading) {
     return (
-      <div className="mi-agenda-loading">
-        <FontAwesomeIcon
-          icon={faSpinner}
-          spin
-          className="loading-icon"
-          aria-hidden="true"
-        />
-        <p>Cargando tu agenda...</p>
-      </div>
+      <LoadingSpinner size="lg" message="Cargando tu agenda..." fullScreen />
     );
   }
 
@@ -378,9 +422,12 @@ function MiAgendaContent() {
             <div className="business-info-card">
               <div className="business-info-image">
                 {selectedBusiness.cover_image_url ? (
-                  <img
+                  <Image
                     src={selectedBusiness.cover_image_url}
                     alt={selectedBusiness.name}
+                    fill
+                    sizes="120px"
+                    style={{ objectFit: "cover" }}
                   />
                 ) : (
                   <div className="business-info-placeholder">
@@ -432,9 +479,7 @@ function MiAgendaContent() {
                 <FontAwesomeIcon icon={faCheckCircle} />
               </div>
               <span className="stat-value">
-                {
-                  appointments.filter((a) => a.status === "CONFIRMED").length
-                }
+                {appointments.filter((a) => a.status === "CONFIRMED").length}
               </span>
               <span className="stat-label">Confirmadas</span>
             </div>
@@ -497,20 +542,20 @@ function MiAgendaContent() {
                       <div className="date-appointments">
                         {groupedAppointments[date]
                           .sort((a, b) =>
-                            a.start_time.localeCompare(b.start_time)
+                            a.start_time.localeCompare(b.start_time),
                           )
                           .map((appointment) => (
                             <AppointmentCard
                               key={appointment.id}
                               appointment={appointment}
                               onComplete={(id) =>
-                                handleUpdateStatus(id, "COMPLETED")
+                                requestStatusUpdate(id, "COMPLETED")
                               }
                               onNoShow={(id) =>
-                                handleUpdateStatus(id, "NO_SHOW")
+                                requestStatusUpdate(id, "NO_SHOW")
                               }
                               onCancel={(id) =>
-                                handleUpdateStatus(id, "CANCELLED")
+                                requestStatusUpdate(id, "CANCELLED")
                               }
                               isUpdating={isUpdating}
                             />
@@ -524,6 +569,36 @@ function MiAgendaContent() {
           </div>
         </div>
       </main>
+
+      <ConfirmDialog
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={() => {
+          if (confirmAction) {
+            handleUpdateStatus(
+              confirmAction.appointmentId,
+              confirmAction.status,
+            );
+          }
+        }}
+        title={confirmAction?.title || ""}
+        message={confirmAction?.message || ""}
+        confirmText={
+          confirmAction?.status === "COMPLETED"
+            ? "Completar"
+            : confirmAction?.status === "NO_SHOW"
+              ? "Confirmar"
+              : "Cancelar cita"
+        }
+        variant={
+          confirmAction?.status === "CANCELLED"
+            ? "danger"
+            : confirmAction?.status === "NO_SHOW"
+              ? "warning"
+              : "info"
+        }
+        loading={isUpdating}
+      />
     </div>
   );
 }

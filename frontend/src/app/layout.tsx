@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/toast";
+import { ErrorBoundaryWrapper } from "@/components/ui/ErrorBoundaryWrapper";
 
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-jakarta",
   display: "swap",
 });
 
@@ -38,10 +46,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`dark ${inter.variable}`} data-scroll-behavior="smooth">
+    <html
+      lang="es"
+      className={`dark ${inter.variable} ${plusJakarta.variable}`}
+      data-scroll-behavior="smooth"
+    >
       <body className={`antialiased ${inter.className}`}>
         <AuthProvider>
-          {children}
+          <ErrorBoundaryWrapper>{children}</ErrorBoundaryWrapper>
           <Toaster />
         </AuthProvider>
       </body>
