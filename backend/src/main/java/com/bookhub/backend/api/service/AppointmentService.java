@@ -69,6 +69,12 @@ public class AppointmentService {
         LocalDateTime startTime = request.getStartTime();
         LocalDateTime endTime = startTime.plusMinutes(service.getDurationMinutes());
 
+        // Validate appointment is not in the past (15-minute buffer)
+        LocalDateTime minimumTime = LocalDateTime.now().plusMinutes(15);
+        if (startTime.isBefore(minimumTime)) {
+            throw new BadRequestException("No se pueden agendar citas en el pasado. Debe ser al menos 15 minutos en el futuro");
+        }
+
         // Validate worker availability (schedule)
         validateWorkerSchedule(worker.getId(), startTime, endTime);
 

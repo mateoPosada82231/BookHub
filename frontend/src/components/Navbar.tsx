@@ -137,6 +137,19 @@ export function Navbar() {
                   key={item.href}
                   href={item.href}
                   className={`navbar-link ${isActive ? "navbar-link-active" : ""}`}
+                  onClick={(e) => {
+                    if (isActive) {
+                      e.preventDefault();
+                    }
+                  }}
+                  aria-current={isActive ? "page" : undefined}
+                  aria-disabled={isActive}
+                  tabIndex={isActive ? -1 : undefined}
+                  style={
+                    isActive
+                      ? { pointerEvents: "none", cursor: "default" }
+                      : undefined
+                  }
                 >
                   <FontAwesomeIcon
                     icon={item.icon}
@@ -211,8 +224,22 @@ export function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={closeMobileMenu}
+                  onClick={(e) => {
+                    if (isActive) {
+                      e.preventDefault();
+                    } else {
+                      closeMobileMenu();
+                    }
+                  }}
                   className={`navbar-mobile-link ${isActive ? "navbar-mobile-link-active" : ""}`}
+                  aria-current={isActive ? "page" : undefined}
+                  aria-disabled={isActive}
+                  tabIndex={isActive ? -1 : undefined}
+                  style={
+                    isActive
+                      ? { pointerEvents: "none", cursor: "default" }
+                      : undefined
+                  }
                 >
                   <FontAwesomeIcon
                     icon={item.icon}

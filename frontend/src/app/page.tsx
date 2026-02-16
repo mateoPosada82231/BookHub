@@ -216,7 +216,6 @@ function HomePageContent() {
               favorites={favorites}
               onToggleFavorite={handleToggleFavorite}
               onViewDetails={handleViewDetails}
-              onFilterClick={handleFilterClick}
             />
 
             {/* Paginación */}

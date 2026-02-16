@@ -27,8 +27,7 @@ bookhub/
 │   ├── src/lib/api/     # Cliente HTTP modular
 │   └── Dockerfile
 ├── docker-compose.yml   # PostgreSQL + Backend + Frontend
-├── .env.example         # Variables de entorno
-└── .github/workflows/   # CI/CD con GitHub Actions
+└── .env.example         # Variables de entorno
 ```
 
 ## 🚀 Tecnologías
