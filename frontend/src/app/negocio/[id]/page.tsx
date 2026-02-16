@@ -22,6 +22,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Navbar } from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import { appointmentsApi } from "@/lib/api/appointments";
 import { Business, Service, Worker, WorkerSchedule, Review } from "@/types";
 import { ImageGallery } from "@/components/ImageGallery";
 import { ReviewList, ReviewsSummary } from "@/components/ReviewList";
@@ -79,6 +80,37 @@ function getDayOfWeek(date: Date): number {
   return date.getDay();
 }
 
+// Check if a date is in the past
+function isDateInPast(date: Date): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const checkDate = new Date(date);
+  checkDate.setHours(0, 0, 0, 0);
+  return checkDate < today;
+}
+
+// Check if a date is today
+function isToday(date: Date): boolean {
+  const today = new Date();
+  return (
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  );
+}
+
+// Check if a time slot is in the past (with 15-minute buffer)
+function isTimeSlotInPast(date: Date, timeSlot: string): boolean {
+  const [hours, minutes] = timeSlot.split(":").map(Number);
+  const slotDate = new Date(date);
+  slotDate.setHours(hours, minutes, 0, 0);
+
+  const now = new Date();
+  const bufferTime = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutes ahead
+
+  return slotDate < bufferTime;
+}
+
 // Generate dates for the next 14 days
 function generateDates(): Date[] {
   const dates: Date[] = [];
@@ -120,6 +152,10 @@ function NegocioContent() {
   const [bookingNotes, setBookingNotes] = useState("");
   const [isBooking, setIsBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+
+  // Availability state
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
 
   // Available dates
   const availableDates = useMemo(() => generateDates(), []);
@@ -169,6 +205,40 @@ function NegocioContent() {
       loadReviews();
     }
   }, [businessId]);
+
+  // Load worker availability when worker, date or service changes
+  useEffect(() => {
+    const loadAvailability = async () => {
+      if (!selectedWorker || !selectedDate || !selectedService) {
+        setBookedSlots([]);
+        return;
+      }
+
+      try {
+        setLoadingAvailability(true);
+        const dateStr = selectedDate.toISOString().split("T")[0];
+        const availability = await appointmentsApi.getWorkerAvailability(
+          selectedWorker.id,
+          dateStr,
+          selectedService.duration_minutes,
+        );
+
+        // Extract booked slots (slots where available is false)
+        const booked = availability.available_slots
+          .filter((slot) => !slot.available)
+          .map((slot) => slot.start_time);
+
+        setBookedSlots(booked);
+      } catch (err) {
+        console.error("Error loading availability:", err);
+        setBookedSlots([]);
+      } finally {
+        setLoadingAvailability(false);
+      }
+    };
+
+    loadAvailability();
+  }, [selectedWorker, selectedDate, selectedService]);
 
   // Get available time slots for selected date and worker
   const availableTimeSlots = useMemo(() => {
@@ -520,9 +590,20 @@ function NegocioContent() {
                         return (
                           <button
                             key={date.toISOString()}
-                            className={`date-option ${isSelected ? "selected" : ""} ${!hasSchedule ? "disabled" : ""}`}
-                            onClick={() => hasSchedule && setSelectedDate(date)}
-                            disabled={!hasSchedule}
+                            className={`date-option ${isSelected ? "selected" : ""} ${!hasSchedule || isDateInPast(date) ? "disabled" : ""}`}
+                            onClick={() =>
+                              hasSchedule &&
+                              !isDateInPast(date) &&
+                              setSelectedDate(date)
+                            }
+                            disabled={!hasSchedule || isDateInPast(date)}
+                            title={
+                              isDateInPast(date)
+                                ? "Fecha pasada"
+                                : !hasSchedule
+                                  ? "Sin horario"
+                                  : ""
+                            }
                           >
                             <span className="date-weekday">
                               {date.toLocaleDateString("es-ES", {
@@ -545,23 +626,54 @@ function NegocioContent() {
                   {selectedDate && (
                     <div className="time-picker">
                       <h4>Hora</h4>
-                      <div className="times-grid">
-                        {availableTimeSlots.length === 0 ? (
-                          <p className="no-items">
-                            No hay horarios disponibles para esta fecha
-                          </p>
-                        ) : (
-                          availableTimeSlots.map((time) => (
-                            <button
-                              key={time}
-                              className={`time-option ${selectedTime === time ? "selected" : ""}`}
-                              onClick={() => setSelectedTime(time)}
-                            >
-                              {time}
-                            </button>
-                          ))
-                        )}
-                      </div>
+                      {loadingAvailability ? (
+                        <div className="loading-slots">
+                          <FontAwesomeIcon icon={faSpinner} spin />
+                          <span>Cargando disponibilidad...</span>
+                        </div>
+                      ) : (
+                        <div className="times-grid">
+                          {availableTimeSlots.length === 0 ? (
+                            <p className="no-items">
+                              No hay horarios disponibles para esta fecha
+                            </p>
+                          ) : (
+                            availableTimeSlots.map((time) => {
+                              const isInPast = isTimeSlotInPast(
+                                selectedDate,
+                                time,
+                              );
+                              const isBooked = bookedSlots.includes(time);
+                              const isDisabled = isInPast || isBooked;
+
+                              return (
+                                <button
+                                  key={time}
+                                  className={`time-option ${selectedTime === time ? "selected" : ""} ${isDisabled ? "disabled" : ""}`}
+                                  onClick={() =>
+                                    !isDisabled && setSelectedTime(time)
+                                  }
+                                  disabled={isDisabled}
+                                  title={
+                                    isInPast
+                                      ? "Hora pasada"
+                                      : isBooked
+                                        ? "Ocupado"
+                                        : ""
+                                  }
+                                >
+                                  {time}
+                                  {isBooked && !isInPast && (
+                                    <span className="slot-badge-busy">
+                                      Ocupado
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
