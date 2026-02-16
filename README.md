@@ -63,24 +63,32 @@ bookhub/
 ### Opción 1: Desarrollo local
 
 ```bash
-# 1. Copiar variables de entorno
-cp .env.example .env
+# Si no tienes postgres corriendo, puedes crear uno:
+docker run -d --name bookhub-db -e POSTGRES_USER=bookhub -e POSTGRES_PASSWORD=bookhub_secret -e POSTGRES_DB=bookhub -p 5432:5432 postgres:16-alpine
+```
 
 # 2. Levantar base de datos
+
 docker compose up postgres -d
 
 # 3. Backend
+
 cd backend
 ./mvnw spring-boot:run
+
 # → http://localhost:8082
+
 # → Swagger: http://localhost:8082/swagger-ui.html
 
 # 4. Frontend (en otra terminal)
+
 cd frontend
 npm install
 npm run dev
+
 # → http://localhost:3000
-```
+
+````
 
 ### Opción 2: Docker Compose (stack completo)
 
@@ -88,7 +96,7 @@ npm run dev
 cp .env.example .env
 # Editar .env con tus valores
 docker compose --profile full up --build
-```
+````
 
 ### Usuarios de prueba (seed data)
 
