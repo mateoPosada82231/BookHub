@@ -11,7 +11,6 @@ interface EstablishmentGridProps {
   favorites: Set<number> | number[];
   onToggleFavorite: (id: number) => void;
   onViewDetails: (id: number) => void;
-  onFilterClick: () => void;
 }
 
 function EstablishmentGridComponent({
@@ -19,11 +18,11 @@ function EstablishmentGridComponent({
   favorites,
   onToggleFavorite,
   onViewDetails,
-  onFilterClick,
 }: EstablishmentGridProps) {
   const isFavorite = useCallback(
-    (id: number) => favorites instanceof Set ? favorites.has(id) : favorites.includes(id),
-    [favorites]
+    (id: number) =>
+      favorites instanceof Set ? favorites.has(id) : favorites.includes(id),
+    [favorites],
   );
 
   return (
@@ -35,14 +34,6 @@ function EstablishmentGridComponent({
             <span className="results-number">{businesses.length}</span> lugares
             encontrados
           </p>
-          <button
-            onClick={onFilterClick}
-            className="filter-button"
-            aria-label="Abrir filtros"
-          >
-            <FontAwesomeIcon icon={faFilter} className="filter-icon" />
-            <span>Filtros</span>
-          </button>
         </div>
 
         {/* Grid */}
@@ -52,7 +43,10 @@ function EstablishmentGridComponent({
               <div
                 key={business.id}
                 className="animate-fadeInUp"
-                style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                  animationFillMode: "both",
+                }}
               >
                 <EstablishmentCard
                   business={business}

@@ -3,6 +3,8 @@ package com.bookhub.backend.api.controller;
 import com.bookhub.backend.api.dto.business.*;
 import com.bookhub.backend.api.service.ServiceManagementService;
 import com.bookhub.backend.config.SecurityUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/businesses/{businessId}/services")
 @RequiredArgsConstructor
+@Tag(name = "Services", description = "Gestión de servicios de un negocio")
 public class ServiceController {
 
     private final ServiceManagementService serviceManagementService;
@@ -24,6 +27,7 @@ public class ServiceController {
      * Get all services for a business (public)
      */
     @GetMapping
+    @Operation(summary = "Listar servicios de un negocio")
     public ResponseEntity<List<ServiceResponse>> getServices(@PathVariable Long businessId) {
         return ResponseEntity.ok(serviceManagementService.getServicesByBusiness(businessId));
     }
@@ -32,6 +36,7 @@ public class ServiceController {
      * Get service by ID
      */
     @GetMapping("/{serviceId}")
+    @Operation(summary = "Obtener servicio por ID")
     public ResponseEntity<ServiceResponse> getServiceById(
             @PathVariable Long businessId,
             @PathVariable Long serviceId) {
@@ -43,6 +48,7 @@ public class ServiceController {
      */
     @PostMapping
     @PreAuthorize("hasRole('OWNER')")
+    @Operation(summary = "Crear servicio")
     public ResponseEntity<ServiceResponse> createService(
             @PathVariable Long businessId,
             @AuthenticationPrincipal SecurityUser user,
@@ -57,6 +63,7 @@ public class ServiceController {
      */
     @PutMapping("/{serviceId}")
     @PreAuthorize("hasRole('OWNER')")
+    @Operation(summary = "Actualizar servicio")
     public ResponseEntity<ServiceResponse> updateService(
             @PathVariable Long businessId,
             @PathVariable Long serviceId,
@@ -71,6 +78,7 @@ public class ServiceController {
      */
     @DeleteMapping("/{serviceId}")
     @PreAuthorize("hasRole('OWNER')")
+    @Operation(summary = "Eliminar servicio")
     public ResponseEntity<Void> deleteService(
             @PathVariable Long businessId,
             @PathVariable Long serviceId,

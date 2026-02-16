@@ -4,6 +4,7 @@ import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -96,8 +97,9 @@ public class RateLimitService {
     }
 
     /**
-     * Clean up expired buckets (call periodically via scheduled task).
+     * Clean up expired buckets every 30 minutes to prevent memory leaks.
      */
+    @Scheduled(fixedRate = 1800000) // 30 minutes
     public void cleanupExpiredBuckets() {
         // Simple cleanup - remove buckets that have recovered to full capacity
         // This prevents memory leaks from accumulating buckets

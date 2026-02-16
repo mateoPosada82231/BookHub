@@ -1,26 +1,120 @@
 # BookHub - Docker Compose
-# NOTA: PostgreSQL se ejecuta en un contenedor externo (puerto 5432).
-# Este archivo queda como referencia. Para desarrollo local,
-# usa el contenedor de postgres que ya tienes corriendo.
+# Usage:
+#   Development: docker compose up postgres
+#   Full stack:  docker compose --profile full up
 
-# Si necesitas levantar postgres desde aquí, descomenta:
-# services:
-#   postgres:
-#     image: postgres:16-alpine
-#     container_name: bookhub-db
-#     environment:
-#       POSTGRES_USER: bookhub
-#       POSTGRES_PASSWORD: bookhub_secret
-#       POSTGRES_DB: bookhub
-#     ports:
-#       - "5432:5432"
-#     volumes:
-#       - postgres_data:/var/lib/postgresql/data
-#     healthcheck:
-#       test: [ "CMD-SHELL", "pg_isready -U bookhub -d bookhub" ]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 5
-#
-# volumes:
-#   postgres_data:
+services:
+  # ============================
+  # PostgreSQL Database
+  # ============================
+  postgres:
+    image: postgres:16-alpine
+    container_name: bookhub-db
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-admin}
+      POSTGRES_DB: ${DB_NAME:-bookhub}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-bookhub}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================
+  # Spring Boot Backend
+  # ============================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bookhub-backend
+    profiles: ["full"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-bookhub}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-admin}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE:-prod}
+      JWT_SECRET: ${JWT_SECRET:-bookhub-super-secret-key-change-in-production-must-be-at-least-256-bits-long-for-hs256}
+      DEV_MODE: ${DEV_MODE:-false}
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    ports:
+      - "${BACKEND_PORT:-8082}:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # ============================
+  # Next.js Frontend
+  # ============================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8082}
+    container_name: bookhub-frontend
+    profiles: ["full"]
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8082}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ============================
+  # Prometheus - Metrics Collection
+  # ============================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bookhub-prometheus
+    profiles: ["monitoring"]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ============================
+  # Grafana - Metrics Dashboard
+  # ============================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: bookhub-grafana
+    profiles: ["monitoring"]
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:

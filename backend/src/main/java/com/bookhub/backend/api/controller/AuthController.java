@@ -5,6 +5,8 @@ import com.bookhub.backend.api.exception.RateLimitExceededException;
 import com.bookhub.backend.api.service.AuthService;
 import com.bookhub.backend.config.RateLimitService;
 import com.bookhub.backend.config.SecurityUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,12 +17,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Registro, login, tokens y recuperación de contraseña")
 public class AuthController {
 
     private final AuthService authService;
     private final RateLimitService rateLimitService;
 
     @PostMapping("/register")
+    @Operation(summary = "Registrar usuario", description = "Crea una nueva cuenta de usuario")
     public ResponseEntity<AuthResponse> register(
             @Valid @RequestBody RegisterRequest request,
             HttpServletRequest httpRequest) {
@@ -32,6 +36,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Iniciar sesión", description = "Autentica un usuario y retorna tokens JWT")
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest) {
@@ -52,12 +57,14 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
+    @Operation(summary = "Refrescar token", description = "Genera un nuevo access token usando el refresh token")
     public ResponseEntity<AuthResponse> refreshToken(
             @Valid @RequestBody RefreshTokenRequest request) {
         return ResponseEntity.ok(authService.refreshToken(request));
     }
 
     @PostMapping("/logout")
+    @Operation(summary = "Cerrar sesión", description = "Invalida los tokens del usuario")
     public ResponseEntity<Void> logout(
             @AuthenticationPrincipal SecurityUser user) {
         authService.logout(user.getId());
@@ -70,6 +77,7 @@ public class AuthController {
      * Always returns 200 OK for security (doesn't reveal if email exists).
      */
     @PostMapping("/forgot-password")
+    @Operation(summary = "Solicitar reset de contraseña", description = "Envía un enlace para restablecer la contraseña")
     public ResponseEntity<MessageResponse> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequest request,
             HttpServletRequest httpRequest) {
@@ -99,6 +107,7 @@ public class AuthController {
      * Validates a password reset token.
      */
     @GetMapping("/validate-reset-token")
+    @Operation(summary = "Validar token de reset", description = "Verifica si un token de reset de contraseña es válido")
     public ResponseEntity<MessageResponse> validateResetToken(
             @RequestParam String token) {
         boolean isValid = authService.validateResetToken(token);
@@ -114,6 +123,7 @@ public class AuthController {
      * Resets the user's password using a valid reset token.
      */
     @PostMapping("/reset-password")
+    @Operation(summary = "Restablecer contraseña", description = "Establece una nueva contraseña usando el token de reset")
     public ResponseEntity<MessageResponse> resetPassword(
             @Valid @RequestBody ResetPasswordRequest request,
             HttpServletRequest httpRequest) {

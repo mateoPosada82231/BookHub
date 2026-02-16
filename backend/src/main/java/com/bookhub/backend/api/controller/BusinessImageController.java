@@ -4,6 +4,8 @@ import com.bookhub.backend.api.dto.business.AddBusinessImageRequest;
 import com.bookhub.backend.api.dto.business.BusinessImageResponse;
 import com.bookhub.backend.api.service.BusinessImageService;
 import com.bookhub.backend.config.SecurityUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/businesses/{businessId}/images")
 @RequiredArgsConstructor
+@Tag(name = "Business Images", description = "Gestión de galería de imágenes del negocio")
 public class BusinessImageController {
 
     private final BusinessImageService businessImageService;
@@ -24,6 +27,7 @@ public class BusinessImageController {
      * Get all images for a business (public)
      */
     @GetMapping
+    @Operation(summary = "Obtener imágenes del negocio")
     public ResponseEntity<List<BusinessImageResponse>> getBusinessImages(@PathVariable Long businessId) {
         return ResponseEntity.ok(businessImageService.getBusinessImages(businessId));
     }
@@ -32,6 +36,7 @@ public class BusinessImageController {
      * Add an image to business gallery (owner only)
      */
     @PostMapping
+    @Operation(summary = "Agregar imagen a la galería")
     public ResponseEntity<BusinessImageResponse> addImage(
             @PathVariable Long businessId,
             @AuthenticationPrincipal SecurityUser user,
@@ -45,6 +50,7 @@ public class BusinessImageController {
      * Remove an image from business gallery (owner only)
      */
     @DeleteMapping("/{imageId}")
+    @Operation(summary = "Eliminar imagen de la galería")
     public ResponseEntity<Void> removeImage(
             @PathVariable Long businessId,
             @PathVariable Long imageId,

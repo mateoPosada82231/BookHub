@@ -4,6 +4,9 @@ import com.bookhub.backend.api.dto.appointment.*;
 import com.bookhub.backend.api.dto.common.PageResponse;
 import com.bookhub.backend.api.service.AppointmentService;
 import com.bookhub.backend.config.SecurityUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -18,6 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/appointments")
 @RequiredArgsConstructor
+@Tag(name = "Appointments", description = "Gestión de citas y reservas")
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
@@ -26,6 +30,7 @@ public class AppointmentController {
      * Create a new appointment
      */
     @PostMapping
+    @Operation(summary = "Crear cita", description = "Reserva una nueva cita con un trabajador")
     public ResponseEntity<AppointmentResponse> createAppointment(
             @AuthenticationPrincipal SecurityUser user,
             @Valid @RequestBody CreateAppointmentRequest request) {
@@ -38,6 +43,7 @@ public class AppointmentController {
      * Get appointment by ID
      */
     @GetMapping("/{id}")
+    @Operation(summary = "Obtener cita por ID")
     public ResponseEntity<AppointmentResponse> getAppointmentById(
             @PathVariable Long id,
             @AuthenticationPrincipal SecurityUser user) {
@@ -49,6 +55,7 @@ public class AppointmentController {
      * Get my appointments (as client)
      */
     @GetMapping("/my")
+    @Operation(summary = "Mis citas (paginadas)")
     public ResponseEntity<PageResponse<AppointmentResponse>> getMyAppointments(
             @AuthenticationPrincipal SecurityUser user,
             @RequestParam(defaultValue = "0") int page,
@@ -61,6 +68,7 @@ public class AppointmentController {
      * Get my upcoming appointments (as client)
      */
     @GetMapping("/my/upcoming")
+    @Operation(summary = "Mis próximas citas")
     public ResponseEntity<List<AppointmentResponse>> getMyUpcomingAppointments(
             @AuthenticationPrincipal SecurityUser user) {
 
@@ -71,6 +79,7 @@ public class AppointmentController {
      * Get appointments for a worker
      */
     @GetMapping("/worker/{workerId}")
+    @Operation(summary = "Citas de un trabajador (paginadas)")
     public ResponseEntity<PageResponse<AppointmentResponse>> getWorkerAppointments(
             @PathVariable Long workerId,
             @AuthenticationPrincipal SecurityUser user,
@@ -84,6 +93,7 @@ public class AppointmentController {
      * Get upcoming appointments for a worker
      */
     @GetMapping("/worker/{workerId}/upcoming")
+    @Operation(summary = "Próximas citas de un trabajador")
     public ResponseEntity<List<AppointmentResponse>> getUpcomingWorkerAppointments(
             @PathVariable Long workerId,
             @AuthenticationPrincipal SecurityUser user) {
@@ -95,6 +105,7 @@ public class AppointmentController {
      * Update appointment (status change)
      */
     @PatchMapping("/{id}")
+    @Operation(summary = "Actualizar estado de cita")
     public ResponseEntity<AppointmentResponse> updateAppointment(
             @PathVariable Long id,
             @AuthenticationPrincipal SecurityUser user,
@@ -107,6 +118,7 @@ public class AppointmentController {
      * Cancel appointment
      */
     @PostMapping("/{id}/cancel")
+    @Operation(summary = "Cancelar cita")
     public ResponseEntity<AppointmentResponse> cancelAppointment(
             @PathVariable Long id,
             @AuthenticationPrincipal SecurityUser user,
@@ -119,6 +131,7 @@ public class AppointmentController {
      * Add review to appointment
      */
     @PostMapping("/{id}/review")
+    @Operation(summary = "Crear reseña para una cita completada")
     public ResponseEntity<ReviewResponse> createReview(
             @PathVariable Long id,
             @AuthenticationPrincipal SecurityUser user,
@@ -132,6 +145,7 @@ public class AppointmentController {
      * Get worker availability for a specific date
      */
     @GetMapping("/availability/{workerId}")
+    @Operation(summary = "Disponibilidad de un trabajador")
     public ResponseEntity<AvailabilityResponse> getWorkerAvailability(
             @PathVariable Long workerId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { UserRole } from "@/types";
 
@@ -17,19 +17,20 @@ interface ProtectedRouteProps {
  * Componente que protege rutas requiriendo autenticación y opcionalmente roles específicos.
  * Redirige a /login si no está autenticado o a fallbackPath si no tiene el rol requerido.
  */
-export function ProtectedRoute({ 
-  children, 
+export function ProtectedRoute({
+  children,
   allowedRoles,
-  fallbackPath = "/" 
+  fallbackPath = "/",
 }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
-        // No autenticado -> ir a login
-        router.push("/login");
+        // No autenticado -> ir a login con returnTo
+        router.push(`/login?returnTo=${encodeURIComponent(pathname)}`);
       } else if (allowedRoles && user && !allowedRoles.includes(user.role)) {
         // Autenticado pero sin el rol requerido -> ir a fallback
         router.push(fallbackPath);

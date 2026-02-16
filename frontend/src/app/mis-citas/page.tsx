@@ -2,10 +2,24 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Calendar, Clock, MapPin, User, ChevronRight, Store, Scissors,
-  X, AlertCircle, CheckCircle, Loader2, RefreshCw, CalendarDays, History, Star
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  ChevronRight,
+  Store,
+  Scissors,
+  X,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  RefreshCw,
+  CalendarDays,
+  History,
+  Star,
 } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/context/AuthContext";
@@ -33,15 +47,27 @@ const staggerContainer = {
 const getStatusConfig = (status: string) => {
   switch (status) {
     case "CONFIRMED":
-      return { className: "status-confirmed", label: "Confirmada", icon: CheckCircle };
+      return {
+        className: "status-confirmed",
+        label: "Confirmada",
+        icon: CheckCircle,
+      };
     case "PENDING":
       return { className: "status-pending", label: "Pendiente", icon: Clock };
     case "COMPLETED":
-      return { className: "status-completed", label: "Completada", icon: CheckCircle };
+      return {
+        className: "status-completed",
+        label: "Completada",
+        icon: CheckCircle,
+      };
     case "CANCELLED":
       return { className: "status-cancelled", label: "Cancelada", icon: X };
     case "NO_SHOW":
-      return { className: "status-no-show", label: "No asistió", icon: AlertCircle };
+      return {
+        className: "status-no-show",
+        label: "No asistió",
+        icon: AlertCircle,
+      };
     default:
       return { className: "status-pending", label: status, icon: Clock };
   }
@@ -77,19 +103,21 @@ function MisCitasContent() {
   const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<Appointment | null>(null);
   const [cancelReason, setCancelReason] = useState("");
-  
+
   // Review state
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewAppointment, setReviewAppointment] = useState<Appointment | null>(null);
+  const [reviewAppointment, setReviewAppointment] =
+    useState<Appointment | null>(null);
 
   const loadAppointments = useCallback(async () => {
     if (!user) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await api.getMyAppointments(0, 50);
       setAppointments(response.content || []);
@@ -99,8 +127,6 @@ function MisCitasContent() {
       setLoading(false);
     }
   }, [user]);
-
-
 
   useEffect(() => {
     if (user) {
@@ -121,7 +147,7 @@ function MisCitasContent() {
 
   const handleSubmitReview = async (data: CreateReviewRequest) => {
     if (!reviewAppointment) return;
-    
+
     await api.createReview(reviewAppointment.id, data);
     await loadAppointments();
     setShowReviewModal(false);
@@ -131,10 +157,13 @@ function MisCitasContent() {
 
   const handleConfirmCancel = async () => {
     if (!selectedAppointment) return;
-    
+
     setCancellingId(selectedAppointment.id);
     try {
-      await api.cancelAppointment(selectedAppointment.id, cancelReason || undefined);
+      await api.cancelAppointment(
+        selectedAppointment.id,
+        cancelReason || undefined,
+      );
       await loadAppointments();
       setShowCancelModal(false);
       setSelectedAppointment(null);
@@ -153,15 +182,24 @@ function MisCitasContent() {
   }
 
   const upcomingAppointments = appointments.filter(
-    (apt) => isUpcoming(apt.start_time) && apt.status !== "CANCELLED" && apt.status !== "COMPLETED"
-  );
-  
-  const pastAppointments = appointments.filter(
-    (apt) => !isUpcoming(apt.start_time) || apt.status === "CANCELLED" || apt.status === "COMPLETED"
+    (apt) =>
+      isUpcoming(apt.start_time) &&
+      apt.status !== "CANCELLED" &&
+      apt.status !== "COMPLETED",
   );
 
-  const pendingCount = appointments.filter(apt => apt.status === "PENDING").length;
-  const displayAppointments = activeTab === "upcoming" ? upcomingAppointments : pastAppointments;
+  const pastAppointments = appointments.filter(
+    (apt) =>
+      !isUpcoming(apt.start_time) ||
+      apt.status === "CANCELLED" ||
+      apt.status === "COMPLETED",
+  );
+
+  const pendingCount = appointments.filter(
+    (apt) => apt.status === "PENDING",
+  ).length;
+  const displayAppointments =
+    activeTab === "upcoming" ? upcomingAppointments : pastAppointments;
 
   return (
     <div className="mis-citas-page">
@@ -177,7 +215,9 @@ function MisCitasContent() {
           >
             <div>
               <h1 className="mis-citas-title">Mis Citas</h1>
-              <p className="mis-citas-subtitle">Gestiona tus reservas y citas programadas</p>
+              <p className="mis-citas-subtitle">
+                Gestiona tus reservas y citas programadas
+              </p>
             </div>
             <button
               onClick={loadAppointments}
@@ -263,9 +303,11 @@ function MisCitasContent() {
 
           {/* Loading State */}
           {loading && (
-            <div className="loading-container">
-              <Loader2 className="h-8 w-8 animate-spin text-white" />
-            </div>
+            <LoadingSpinner
+              size="lg"
+              message="Cargando tus citas..."
+              fullScreen
+            />
           )}
 
           {/* Appointments List */}
@@ -280,7 +322,7 @@ function MisCitasContent() {
                 const statusConfig = getStatusConfig(appointment.status);
                 const StatusIcon = statusConfig.icon;
                 const dateParts = formatDateParts(appointment.start_time);
-                
+
                 return (
                   <motion.div
                     key={appointment.id}
@@ -291,8 +333,12 @@ function MisCitasContent() {
                       {/* Date Column */}
                       <div className="appointment-date-col">
                         <span className="appointment-day">{dateParts.day}</span>
-                        <span className="appointment-month">{dateParts.month}</span>
-                        <span className="appointment-weekday">{dateParts.weekday}</span>
+                        <span className="appointment-month">
+                          {dateParts.month}
+                        </span>
+                        <span className="appointment-weekday">
+                          {dateParts.weekday}
+                        </span>
                       </div>
 
                       {/* Content */}
@@ -307,7 +353,9 @@ function MisCitasContent() {
                               <p>{appointment.service_name}</p>
                             </div>
                           </div>
-                          <span className={`status-badge ${statusConfig.className}`}>
+                          <span
+                            className={`status-badge ${statusConfig.className}`}
+                          >
                             <StatusIcon />
                             {statusConfig.label}
                           </span>
@@ -316,7 +364,10 @@ function MisCitasContent() {
                         <div className="appointment-details">
                           <div className="detail-item">
                             <Clock />
-                            <span>{formatTime(appointment.start_time)} - {formatTime(appointment.end_time)}</span>
+                            <span>
+                              {formatTime(appointment.start_time)} -{" "}
+                              {formatTime(appointment.end_time)}
+                            </span>
                           </div>
                           <div className="detail-item">
                             <User />
@@ -332,42 +383,56 @@ function MisCitasContent() {
 
                         <div className="appointment-footer">
                           <div className="appointment-price">
-                            <span className="appointment-price-label">Total</span>
-                            ${(appointment.total_price || appointment.service_price || 0).toLocaleString("es-CO")}
+                            <span className="appointment-price-label">
+                              Total
+                            </span>
+                            $
+                            {(
+                              appointment.total_price ||
+                              appointment.service_price ||
+                              0
+                            ).toLocaleString("es-CO")}
                           </div>
                           <div className="appointment-actions">
                             {/* Review button for completed appointments without review */}
-                            {appointment.status === "COMPLETED" && !appointment.has_review && (
-                              <button 
-                                onClick={() => handleReviewClick(appointment)}
-                                className="btn-review"
-                              >
-                                <Star size={16} />
-                                Dejar reseña
-                              </button>
-                            )}
+                            {appointment.status === "COMPLETED" &&
+                              !appointment.has_review && (
+                                <button
+                                  onClick={() => handleReviewClick(appointment)}
+                                  className="btn-review"
+                                >
+                                  <Star size={16} />
+                                  Dejar reseña
+                                </button>
+                              )}
                             {/* Badge for already reviewed appointments */}
-                            {appointment.status === "COMPLETED" && appointment.has_review && (
-                              <span className="review-badge">
-                                <CheckCircle size={14} />
-                                Reseña enviada
-                              </span>
-                            )}
-                            {activeTab === "upcoming" && appointment.status !== "CANCELLED" && (
-                              <button 
-                                onClick={() => handleCancelClick(appointment)}
-                                disabled={cancellingId === appointment.id}
-                                className="btn-cancel"
-                              >
-                                {cancellingId === appointment.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  "Cancelar"
-                                )}
-                              </button>
-                            )}
-                            <button 
-                              onClick={() => router.push(`/negocio/${appointment.business_id}`)}
+                            {appointment.status === "COMPLETED" &&
+                              appointment.has_review && (
+                                <span className="review-badge">
+                                  <CheckCircle size={14} />
+                                  Reseña enviada
+                                </span>
+                              )}
+                            {activeTab === "upcoming" &&
+                              appointment.status !== "CANCELLED" && (
+                                <button
+                                  onClick={() => handleCancelClick(appointment)}
+                                  disabled={cancellingId === appointment.id}
+                                  className="btn-cancel"
+                                >
+                                  {cancellingId === appointment.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    "Cancelar"
+                                  )}
+                                </button>
+                              )}
+                            <button
+                              onClick={() =>
+                                router.push(
+                                  `/negocio/${appointment.business_id}`,
+                                )
+                              }
                               className="btn-view"
                             >
                               Ver negocio
@@ -394,10 +459,9 @@ function MisCitasContent() {
                 <Calendar />
               </div>
               <h3>
-                {activeTab === "upcoming" 
-                  ? "No tienes citas programadas" 
-                  : "No tienes citas anteriores"
-                }
+                {activeTab === "upcoming"
+                  ? "No tienes citas programadas"
+                  : "No tienes citas anteriores"}
               </h3>
               <p>
                 {activeTab === "upcoming"
@@ -440,7 +504,9 @@ function MisCitasContent() {
                 </div>
                 <div>
                   <h3 className="modal-title">Cancelar cita</h3>
-                  <p className="modal-subtitle">Esta acción no se puede deshacer</p>
+                  <p className="modal-subtitle">
+                    Esta acción no se puede deshacer
+                  </p>
                 </div>
               </div>
 
@@ -453,7 +519,14 @@ function MisCitasContent() {
                 </span>
               </div>
 
-              <label style={{ display: "block", color: "#a3a3a3", fontSize: "0.875rem", marginBottom: "0.5rem" }}>
+              <label
+                style={{
+                  display: "block",
+                  color: "#a3a3a3",
+                  fontSize: "0.875rem",
+                  marginBottom: "0.5rem",
+                }}
+              >
                 Motivo de cancelación (opcional)
               </label>
               <textarea
@@ -499,12 +572,16 @@ function MisCitasContent() {
           setReviewAppointment(null);
         }}
         onSubmit={handleSubmitReview}
-        appointmentInfo={reviewAppointment ? {
-          serviceName: reviewAppointment.service_name,
-          businessName: reviewAppointment.business_name,
-          workerName: reviewAppointment.worker_name,
-          date: reviewAppointment.start_time,
-        } : undefined}
+        appointmentInfo={
+          reviewAppointment
+            ? {
+                serviceName: reviewAppointment.service_name,
+                businessName: reviewAppointment.business_name,
+                workerName: reviewAppointment.worker_name,
+                date: reviewAppointment.start_time,
+              }
+            : undefined
+        }
       />
     </div>
   );

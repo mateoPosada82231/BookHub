@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -12,8 +12,10 @@ import "@/styles/auth.css";
 
 function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo") || "/";
   const { login } = useAuth();
-  
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -38,10 +40,12 @@ function LoginPageContent() {
     try {
       await login(formData.email, formData.password);
       notify.success("¡Bienvenido de nuevo!");
-      router.push("/");
+      router.push(returnTo);
     } catch (err) {
       const apiError = err as ApiError;
-      const errorMessage = apiError.message || "Error al iniciar sesión. Verifica tus credenciales.";
+      const errorMessage =
+        apiError.message ||
+        "Error al iniciar sesión. Verifica tus credenciales.";
       setError(errorMessage);
       notify.error(errorMessage);
     } finally {
@@ -98,7 +102,10 @@ function LoginPageContent() {
               </button>
             </div>
             <div className="text-end mt-1">
-              <Link href="/recuperar-password" className="small text-primary text-decoration-none">
+              <Link
+                href="/recuperar-password"
+                className="small text-primary text-decoration-none"
+              >
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
@@ -138,7 +145,9 @@ function LoginPageContent() {
 export default function LoginPage() {
   return (
     <PublicOnlyRoute>
-      <LoginPageContent />
+      <Suspense fallback={null}>
+        <LoginPageContent />
+      </Suspense>
     </PublicOnlyRoute>
   );
 }

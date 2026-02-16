@@ -108,10 +108,13 @@
 
 .business-info-card:hover {
   border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3), 0 0 30px rgba(255, 255, 255, 0.02);
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.3),
+    0 0 30px rgba(255, 255, 255, 0.02);
 }
 
 .business-info-image {
+  position: relative;
   width: 60px;
   height: 60px;
   border-radius: 10px;
@@ -293,7 +296,7 @@
 }
 
 .tab.active::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
@@ -639,8 +642,12 @@
 
 /* ============ ANIMATIONS ============ */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fadeInUp {
@@ -655,6 +662,11 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }

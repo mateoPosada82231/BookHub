@@ -2,14 +2,21 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Rutas públicas que no requieren autenticación
-const publicPaths = ["/login", "/registro", "/recuperar-password"];
+const publicPaths = [
+  "/",
+  "/login",
+  "/registro",
+  "/recuperar-password",
+  "/reset-password",
+  "/negocio",
+];
 
 // Rutas que redirigen al home si el usuario YA está autenticado
 const authOnlyPaths = ["/login", "/registro", "/recuperar-password"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
   // Si es una ruta de API, archivos estáticos o _next, no interferir
   if (
     pathname.startsWith("/api") ||
@@ -23,7 +30,7 @@ export function middleware(request: NextRequest) {
 
   // Verificar si es una ruta pública
   const isPublicPath = publicPaths.some(
-    (path) => pathname === path || pathname.startsWith(path + "/")
+    (path) => pathname === path || pathname.startsWith(path + "/"),
   );
 
   // Si es ruta pública, permitir acceso

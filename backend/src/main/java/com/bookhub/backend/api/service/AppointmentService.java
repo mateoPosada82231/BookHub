@@ -279,17 +279,30 @@ public class AppointmentService {
     }
 
     /**
-     * Get reviews for a business
+     * Get paginated reviews for a business
      */
     @Transactional(readOnly = true)
-    public List<ReviewResponse> getBusinessReviews(Long businessId) {
+    public PageResponse<ReviewResponse> getBusinessReviews(Long businessId, int page, int size) {
         Business business = businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio", businessId));
 
-        return reviewRepository.findByBusinessId(businessId)
-                .stream()
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Review> reviews = reviewRepository.findByBusinessIdPaged(businessId, pageable);
+
+        List<ReviewResponse> content = reviews.getContent().stream()
                 .map(review -> toReviewResponse(review, review.getAppointment()))
                 .collect(Collectors.toList());
+
+        return PageResponse.<ReviewResponse>builder()
+                .content(content)
+                .totalElements(reviews.getTotalElements())
+                .totalPages(reviews.getTotalPages())
+                .currentPage(reviews.getNumber())
+                .pageSize(reviews.getSize())
+                .first(reviews.isFirst())
+                .last(reviews.isLast())
+                .empty(reviews.isEmpty())
+                .build();
     }
 
     // ========== HELPER METHODS ==========

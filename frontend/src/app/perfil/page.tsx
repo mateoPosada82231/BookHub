@@ -2,14 +2,29 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  User, Mail, Phone, Camera, LogOut, ChevronRight, Bell, Shield, 
-  Save, X, Calendar, Star, CheckCircle, AlertCircle, Crown, Briefcase 
+import {
+  User,
+  Mail,
+  Phone,
+  Camera,
+  LogOut,
+  ChevronRight,
+  Bell,
+  Shield,
+  Save,
+  X,
+  Calendar,
+  Star,
+  CheckCircle,
+  AlertCircle,
+  Crown,
+  Briefcase,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { api } from "@/lib/api";
 import "@/styles/perfil.css";
 
@@ -20,7 +35,11 @@ function PerfilContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [stats, setStats] = useState({ appointments: 0, favorites: 0, reviews: 0 });
+  const [stats, setStats] = useState({
+    appointments: 0,
+    favorites: 0,
+    reviews: 0,
+  });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -45,13 +64,14 @@ function PerfilContent() {
   const loadStats = async () => {
     try {
       const appointments = await api.getMyAppointments(0, 1);
-      setStats(prev => ({ ...prev, appointments: appointments.total_elements }));
+      setStats((prev) => ({
+        ...prev,
+        appointments: appointments.total_elements,
+      }));
     } catch (err) {
       // Ignore errors for stats
     }
   };
-
-
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -155,11 +175,15 @@ function PerfilContent() {
               <div className="profile-avatar-container">
                 <div className="profile-avatar">
                   {formData.avatar_url || user.avatarUrl ? (
-                    <img
-                      src={formData.avatar_url || user.avatarUrl}
+                    <Image
+                      src={formData.avatar_url || user.avatarUrl || ""}
                       alt={user.fullName}
+                      width={96}
+                      height={96}
+                      className="profile-avatar-img"
+                      style={{ objectFit: "cover", borderRadius: "50%" }}
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
+                        (e.target as HTMLImageElement).style.display = "none";
                       }}
                     />
                   ) : (
@@ -223,14 +247,19 @@ function PerfilContent() {
                 </h2>
                 <div className="profile-form-grid">
                   <div className="profile-form-group">
-                    <label className="profile-form-label">Nombre completo</label>
+                    <label className="profile-form-label">
+                      Nombre completo
+                    </label>
                     <div className="profile-input-wrapper">
                       <User className="profile-input-icon h-5 w-5" />
                       <input
                         type="text"
                         value={formData.full_name}
                         onChange={(e) =>
-                          setFormData({ ...formData, full_name: e.target.value })
+                          setFormData({
+                            ...formData,
+                            full_name: e.target.value,
+                          })
                         }
                         className="profile-input"
                         placeholder="Tu nombre completo"
@@ -239,7 +268,9 @@ function PerfilContent() {
                   </div>
 
                   <div className="profile-form-group">
-                    <label className="profile-form-label">Correo electrónico</label>
+                    <label className="profile-form-label">
+                      Correo electrónico
+                    </label>
                     <div className="profile-input-wrapper">
                       <Mail className="profile-input-icon h-5 w-5" />
                       <input
@@ -271,14 +302,19 @@ function PerfilContent() {
                   </div>
 
                   <div className="profile-form-group">
-                    <label className="profile-form-label">URL de foto de perfil</label>
+                    <label className="profile-form-label">
+                      URL de foto de perfil
+                    </label>
                     <div className="profile-input-wrapper">
                       <Camera className="profile-input-icon h-5 w-5" />
                       <input
                         type="url"
                         value={formData.avatar_url}
                         onChange={(e) =>
-                          setFormData({ ...formData, avatar_url: e.target.value })
+                          setFormData({
+                            ...formData,
+                            avatar_url: e.target.value,
+                          })
                         }
                         className="profile-input"
                         placeholder="https://ejemplo.com/tu-foto.jpg"
@@ -327,7 +363,9 @@ function PerfilContent() {
               </div>
               <div className="profile-menu-content">
                 <div className="profile-menu-title">Mis Citas</div>
-                <div className="profile-menu-description">Ver historial y próximas citas</div>
+                <div className="profile-menu-description">
+                  Ver historial y próximas citas
+                </div>
               </div>
               <ChevronRight className="profile-menu-arrow h-5 w-5" />
             </button>
@@ -338,7 +376,9 @@ function PerfilContent() {
               </div>
               <div className="profile-menu-content">
                 <div className="profile-menu-title">Notificaciones</div>
-                <div className="profile-menu-description">Configura tus alertas y recordatorios</div>
+                <div className="profile-menu-description">
+                  Configura tus alertas y recordatorios
+                </div>
               </div>
               <ChevronRight className="profile-menu-arrow h-5 w-5" />
             </button>
@@ -349,7 +389,9 @@ function PerfilContent() {
               </div>
               <div className="profile-menu-content">
                 <div className="profile-menu-title">Privacidad y seguridad</div>
-                <div className="profile-menu-description">Contraseña, verificación en dos pasos</div>
+                <div className="profile-menu-description">
+                  Contraseña, verificación en dos pasos
+                </div>
               </div>
               <ChevronRight className="profile-menu-arrow h-5 w-5" />
             </button>

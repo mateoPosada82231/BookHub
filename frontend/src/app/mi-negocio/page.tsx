@@ -17,15 +17,33 @@ import {
   faDollarSign,
   faImage,
 } from "@fortawesome/free-solid-svg-icons";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { api } from "@/lib/api";
 import { notify } from "@/components/ui/toast";
-import type { BusinessSummary, Business, Service, Worker, WorkerScheduleRequest, BusinessImage } from "@/types";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import type {
+  BusinessSummary,
+  Business,
+  Service,
+  Worker,
+  WorkerScheduleRequest,
+  BusinessImage,
+} from "@/types";
+import Image from "next/image";
 import "@/styles/mi-negocio.css";
 import "@/styles/reviews.css";
 
-const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+const DAY_NAMES = [
+  "Domingo",
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+];
 
 // Componente para crear/editar negocio
 function BusinessForm({
@@ -53,6 +71,31 @@ function BusinessForm({
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // Validaciones
+    if (formData.name.trim().length < 2) {
+      setError("El nombre del negocio debe tener al menos 2 caracteres");
+      setLoading(false);
+      return;
+    }
+    if (!formData.address.trim()) {
+      setError("La dirección es obligatoria");
+      setLoading(false);
+      return;
+    }
+    if (!formData.city.trim()) {
+      setError("La ciudad es obligatoria");
+      setLoading(false);
+      return;
+    }
+    if (
+      formData.cover_image_url &&
+      !formData.cover_image_url.startsWith("http")
+    ) {
+      setError("La URL de imagen debe empezar con http:// o https://");
+      setLoading(false);
+      return;
+    }
 
     try {
       if (business) {
@@ -85,7 +128,9 @@ function BusinessForm({
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               required
               placeholder="Mi Barbería"
             />
@@ -95,7 +140,9 @@ function BusinessForm({
             <label>Categoría</label>
             <select
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value as any })
+              }
             >
               <option value="BARBERSHOP">Barbería</option>
               <option value="HAIR_SALON">Salón de Belleza</option>
@@ -112,7 +159,9 @@ function BusinessForm({
             <label>Descripción</label>
             <textarea
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               placeholder="Describe tu negocio..."
               rows={3}
             />
@@ -124,7 +173,9 @@ function BusinessForm({
               <input
                 type="text"
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
                 required
                 placeholder="Calle 123 #45-67"
               />
@@ -134,7 +185,9 @@ function BusinessForm({
               <input
                 type="text"
                 value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, city: e.target.value })
+                }
                 required
                 placeholder="Medellín"
               />
@@ -146,7 +199,9 @@ function BusinessForm({
             <input
               type="tel"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
               placeholder="300 123 4567"
             />
           </div>
@@ -156,7 +211,9 @@ function BusinessForm({
             <input
               type="url"
               value={formData.cover_image_url}
-              onChange={(e) => setFormData({ ...formData, cover_image_url: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, cover_image_url: e.target.value })
+              }
               placeholder="https://..."
             />
           </div>
@@ -203,11 +260,35 @@ function ServiceForm({
     setLoading(true);
     setError(null);
 
+    // Validaciones
+    if (formData.name.trim().length < 2) {
+      setError("El nombre del servicio debe tener al menos 2 caracteres");
+      setLoading(false);
+      return;
+    }
+    if (formData.duration_minutes < 5) {
+      setError("La duración mínima es de 5 minutos");
+      setLoading(false);
+      return;
+    }
+    if (formData.duration_minutes > 480) {
+      setError("La duración máxima es de 480 minutos (8 horas)");
+      setLoading(false);
+      return;
+    }
+    if (formData.price < 0) {
+      setError("El precio no puede ser negativo");
+      setLoading(false);
+      return;
+    }
+
     try {
       if (service) {
         await api.updateService(businessId, service.id, formData);
+        notify.success("Servicio actualizado correctamente");
       } else {
         await api.createService(businessId, formData);
+        notify.success("¡Servicio creado exitosamente!");
       }
       onSave();
     } catch (err: any) {
@@ -230,7 +311,9 @@ function ServiceForm({
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               required
               placeholder="Corte de cabello"
             />
@@ -240,7 +323,9 @@ function ServiceForm({
             <label>Descripción</label>
             <textarea
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               placeholder="Describe el servicio..."
               rows={2}
             />
@@ -253,7 +338,10 @@ function ServiceForm({
                 type="number"
                 value={formData.duration_minutes}
                 onChange={(e) =>
-                  setFormData({ ...formData, duration_minutes: parseInt(e.target.value) || 0 })
+                  setFormData({
+                    ...formData,
+                    duration_minutes: parseInt(e.target.value) || 0,
+                  })
                 }
                 required
                 min={5}
@@ -266,7 +354,10 @@ function ServiceForm({
                 type="number"
                 value={formData.price}
                 onChange={(e) =>
-                  setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
+                  setFormData({
+                    ...formData,
+                    price: parseFloat(e.target.value) || 0,
+                  })
                 }
                 required
                 min={0}
@@ -335,7 +426,9 @@ function WorkerForm({
             <input
               type="text"
               value={formData.full_name}
-              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, full_name: e.target.value })
+              }
               required
               placeholder="Juan Pérez"
             />
@@ -346,7 +439,9 @@ function WorkerForm({
             <input
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               required
               placeholder="juan@email.com"
             />
@@ -357,7 +452,9 @@ function WorkerForm({
             <input
               type="text"
               value={formData.position}
-              onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, position: e.target.value })
+              }
               placeholder="Barbero Senior"
             />
           </div>
@@ -390,15 +487,17 @@ function WorkerScheduleForm({
   onSave: () => void;
   onCancel: () => void;
 }) {
-  const [schedules, setSchedules] = useState<{
-    day_of_week: number;
-    start_time: string;
-    end_time: string;
-    is_available: boolean;
-  }[]>(() => {
+  const [schedules, setSchedules] = useState<
+    {
+      day_of_week: number;
+      start_time: string;
+      end_time: string;
+      is_available: boolean;
+    }[]
+  >(() => {
     // Initialize with existing schedules or default empty schedule
     if (worker.schedules && worker.schedules.length > 0) {
-      return worker.schedules.map(s => ({
+      return worker.schedules.map((s) => ({
         day_of_week: s.day_of_week,
         start_time: s.start_time,
         end_time: s.end_time,
@@ -417,19 +516,25 @@ function WorkerScheduleForm({
   const [error, setError] = useState<string | null>(null);
 
   const handleToggleDay = (dayIndex: number) => {
-    setSchedules(prev => prev.map(s => 
-      s.day_of_week === dayIndex 
-        ? { ...s, is_available: !s.is_available }
-        : s
-    ));
+    setSchedules((prev) =>
+      prev.map((s) =>
+        s.day_of_week === dayIndex
+          ? { ...s, is_available: !s.is_available }
+          : s,
+      ),
+    );
   };
 
-  const handleTimeChange = (dayIndex: number, field: "start_time" | "end_time", value: string) => {
-    setSchedules(prev => prev.map(s =>
-      s.day_of_week === dayIndex
-        ? { ...s, [field]: value }
-        : s
-    ));
+  const handleTimeChange = (
+    dayIndex: number,
+    field: "start_time" | "end_time",
+    value: string,
+  ) => {
+    setSchedules((prev) =>
+      prev.map((s) =>
+        s.day_of_week === dayIndex ? { ...s, [field]: value } : s,
+      ),
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -437,9 +542,24 @@ function WorkerScheduleForm({
     setLoading(true);
     setError(null);
 
+    // Validar que start_time < end_time en días activos
+    const invalidSchedules = schedules.filter(
+      (s) => s.is_available && s.start_time >= s.end_time,
+    );
+    if (invalidSchedules.length > 0) {
+      const dayNames = invalidSchedules
+        .map((s) => DAY_NAMES[s.day_of_week])
+        .join(", ");
+      setError(
+        `La hora de fin debe ser posterior a la de inicio en: ${dayNames}`,
+      );
+      setLoading(false);
+      return;
+    }
+
     try {
       // Only send available schedules
-      const availableSchedules = schedules.filter(s => s.is_available);
+      const availableSchedules = schedules.filter((s) => s.is_available);
       await api.setWorkerSchedule(businessId, worker.id, availableSchedules);
       onSave();
     } catch (err: any) {
@@ -452,9 +572,7 @@ function WorkerScheduleForm({
   return (
     <div className="modal-overlay">
       <div className="modal-container modal-large">
-        <h2 className="modal-title">
-          Horario de {worker.full_name}
-        </h2>
+        <h2 className="modal-title">Horario de {worker.full_name}</h2>
 
         <form onSubmit={handleSubmit} className="modal-form">
           <p className="schedule-instructions">
@@ -463,8 +581,8 @@ function WorkerScheduleForm({
 
           <div className="schedule-grid">
             {schedules.map((schedule) => (
-              <div 
-                key={schedule.day_of_week} 
+              <div
+                key={schedule.day_of_week}
                 className={`schedule-day ${schedule.is_available ? "active" : ""}`}
               >
                 <div className="schedule-day-header">
@@ -476,9 +594,11 @@ function WorkerScheduleForm({
                     />
                     <span className="toggle-slider"></span>
                   </label>
-                  <span className="day-name">{DAY_NAMES[schedule.day_of_week]}</span>
+                  <span className="day-name">
+                    {DAY_NAMES[schedule.day_of_week]}
+                  </span>
                 </div>
-                
+
                 {schedule.is_available && (
                   <div className="schedule-times">
                     <div className="time-input">
@@ -486,7 +606,13 @@ function WorkerScheduleForm({
                       <input
                         type="time"
                         value={schedule.start_time}
-                        onChange={(e) => handleTimeChange(schedule.day_of_week, "start_time", e.target.value)}
+                        onChange={(e) =>
+                          handleTimeChange(
+                            schedule.day_of_week,
+                            "start_time",
+                            e.target.value,
+                          )
+                        }
                       />
                     </div>
                     <span className="time-separator">-</span>
@@ -495,7 +621,13 @@ function WorkerScheduleForm({
                       <input
                         type="time"
                         value={schedule.end_time}
-                        onChange={(e) => handleTimeChange(schedule.day_of_week, "end_time", e.target.value)}
+                        onChange={(e) =>
+                          handleTimeChange(
+                            schedule.day_of_week,
+                            "end_time",
+                            e.target.value,
+                          )
+                        }
                       />
                     </div>
                   </div>
@@ -523,7 +655,9 @@ function WorkerScheduleForm({
 function MiNegocioContent() {
   // Estados principales
   const [businesses, setBusinesses] = useState<BusinessSummary[]>([]);
-  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
+  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(
+    null,
+  );
   const [services, setServices] = useState<Service[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
@@ -534,10 +668,13 @@ function MiNegocioContent() {
   const [showWorkerForm, setShowWorkerForm] = useState(false);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
-  const [editingWorkerSchedule, setEditingWorkerSchedule] = useState<Worker | null>(null);
+  const [editingWorkerSchedule, setEditingWorkerSchedule] =
+    useState<Worker | null>(null);
 
   // Tab activo
-  const [activeTab, setActiveTab] = useState<"overview" | "services" | "workers">("overview");
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "services" | "workers"
+  >("overview");
 
   // Estados de galería
   const [galleryImages, setGalleryImages] = useState<BusinessImage[]>([]);
@@ -546,6 +683,14 @@ function MiNegocioContent() {
   const [newImageCaption, setNewImageCaption] = useState("");
   const [addingImage, setAddingImage] = useState(false);
   const [deletingImageId, setDeletingImageId] = useState<number | null>(null);
+
+  // Estados de confirmación
+  const [confirmAction, setConfirmAction] = useState<{
+    type: "service" | "worker" | "image";
+    id: number;
+    message: string;
+  } | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   // Cargar imágenes de galería
   const loadGalleryImages = useCallback(async (businessId: number) => {
@@ -558,21 +703,24 @@ function MiNegocioContent() {
   }, []);
 
   // Cargar detalles de un negocio
-  const loadBusinessDetails = useCallback(async (id: number) => {
-    try {
-      const [business, servicesData, workersData] = await Promise.all([
-        api.getBusinessById(id),
-        api.getServices(id),
-        api.getWorkers(id),
-      ]);
-      setSelectedBusiness(business);
-      setServices(servicesData);
-      setWorkers(workersData);
-      loadGalleryImages(id);
-    } catch (err: any) {
-      console.error("Error loading business details:", err);
-    }
-  }, [loadGalleryImages]);
+  const loadBusinessDetails = useCallback(
+    async (id: number) => {
+      try {
+        const [business, servicesData, workersData] = await Promise.all([
+          api.getBusinessById(id),
+          api.getServices(id),
+          api.getWorkers(id),
+        ]);
+        setSelectedBusiness(business);
+        setServices(servicesData);
+        setWorkers(workersData);
+        loadGalleryImages(id);
+      } catch (err: any) {
+        console.error("Error loading business details:", err);
+      }
+    },
+    [loadGalleryImages],
+  );
 
   // Cargar mis negocios
   const loadBusinesses = useCallback(async () => {
@@ -628,28 +776,24 @@ function MiNegocioContent() {
     setShowScheduleForm(true);
   };
 
-  const handleDeleteService = async (serviceId: number) => {
+  const handleDeleteService = (serviceId: number) => {
     if (!selectedBusiness) return;
-    if (!confirm("¿Estás seguro de eliminar este servicio?")) return;
-
-    try {
-      await api.deleteService(selectedBusiness.id, serviceId);
-      loadBusinessDetails(selectedBusiness.id);
-    } catch (err: any) {
-      alert(err.message || "Error al eliminar servicio");
-    }
+    setConfirmAction({
+      type: "service",
+      id: serviceId,
+      message:
+        "¿Estás seguro de eliminar este servicio? Esta acción no se puede deshacer.",
+    });
   };
 
-  const handleDeleteWorker = async (workerId: number) => {
+  const handleDeleteWorker = (workerId: number) => {
     if (!selectedBusiness) return;
-    if (!confirm("¿Estás seguro de eliminar este trabajador?")) return;
-
-    try {
-      await api.removeWorker(selectedBusiness.id, workerId);
-      loadBusinessDetails(selectedBusiness.id);
-    } catch (err: any) {
-      alert(err.message || "Error al eliminar trabajador");
-    }
+    setConfirmAction({
+      type: "worker",
+      id: workerId,
+      message:
+        "¿Estás seguro de eliminar este trabajador? Se desvinculará del negocio.",
+    });
   };
 
   // Handlers de galería
@@ -675,29 +819,49 @@ function MiNegocioContent() {
     }
   };
 
-  const handleDeleteImage = async (imageId: number) => {
+  const handleDeleteImage = (imageId: number) => {
     if (!selectedBusiness) return;
-    if (!confirm("¿Estás seguro de eliminar esta imagen?")) return;
+    setConfirmAction({
+      type: "image",
+      id: imageId,
+      message: "¿Estás seguro de eliminar esta imagen de la galería?",
+    });
+  };
 
-    setDeletingImageId(imageId);
+  const handleConfirmAction = async () => {
+    if (!confirmAction || !selectedBusiness) return;
+    setConfirmLoading(true);
     try {
-      await api.removeBusinessImage(selectedBusiness.id, imageId);
-      await loadGalleryImages(selectedBusiness.id);
-      notify.success("Imagen eliminada correctamente");
+      switch (confirmAction.type) {
+        case "service":
+          await api.deleteService(selectedBusiness.id, confirmAction.id);
+          notify.success("Servicio eliminado correctamente");
+          break;
+        case "worker":
+          await api.removeWorker(selectedBusiness.id, confirmAction.id);
+          notify.success("Trabajador eliminado correctamente");
+          break;
+        case "image":
+          await api.removeBusinessImage(selectedBusiness.id, confirmAction.id);
+          notify.success("Imagen eliminada correctamente");
+          break;
+      }
+      loadBusinessDetails(selectedBusiness.id);
     } catch (err: any) {
-      notify.error(err.message || "Error al eliminar imagen");
+      notify.error(
+        err.message ||
+          `Error al eliminar ${confirmAction.type === "service" ? "servicio" : confirmAction.type === "worker" ? "trabajador" : "imagen"}`,
+      );
     } finally {
-      setDeletingImageId(null);
+      setConfirmLoading(false);
+      setConfirmAction(null);
     }
   };
 
   // Estado de carga
   if (loading && businesses.length === 0) {
     return (
-      <div className="mi-negocio-loading">
-        <FontAwesomeIcon icon={faSpinner} spin className="loading-icon" />
-        <p>Cargando tus negocios...</p>
-      </div>
+      <LoadingSpinner size="lg" message="Cargando tus negocios..." fullScreen />
     );
   }
 
@@ -711,9 +875,14 @@ function MiNegocioContent() {
           <header className="mi-negocio-header">
             <div>
               <h1 className="page-title">Mi Negocio</h1>
-              <p className="page-subtitle">Gestiona tu negocio, servicios y trabajadores</p>
+              <p className="page-subtitle">
+                Gestiona tu negocio, servicios y trabajadores
+              </p>
             </div>
-            <button onClick={() => setShowBusinessForm(true)} className="btn-primary">
+            <button
+              onClick={() => setShowBusinessForm(true)}
+              className="btn-primary"
+            >
               <FontAwesomeIcon icon={faPlus} />
               Nuevo Negocio
             </button>
@@ -745,7 +914,10 @@ function MiNegocioContent() {
               </div>
               <h2>No tienes negocios registrados</h2>
               <p>Crea tu primer negocio para empezar a recibir reservas</p>
-              <button onClick={() => setShowBusinessForm(true)} className="btn-primary">
+              <button
+                onClick={() => setShowBusinessForm(true)}
+                className="btn-primary"
+              >
                 <FontAwesomeIcon icon={faPlus} />
                 Crear mi primer negocio
               </button>
@@ -758,9 +930,16 @@ function MiNegocioContent() {
               {/* Business Card */}
               <div className="business-card">
                 <div className="business-card-image">
-                  <img
-                    src={selectedBusiness.cover_image_url || "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=400&h=300&fit=crop"}
+                  <Image
+                    src={
+                      selectedBusiness.cover_image_url ||
+                      "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=400&h=300&fit=crop"
+                    }
                     alt={selectedBusiness.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 400px"
+                    style={{ objectFit: "cover" }}
+                    priority
                   />
                 </div>
                 <div className="business-card-content">
@@ -772,7 +951,9 @@ function MiNegocioContent() {
                       <h2 className="business-name">{selectedBusiness.name}</h2>
                       <div className="business-rating">
                         <FontAwesomeIcon icon={faStar} className="star-icon" />
-                        <span>{(selectedBusiness.average_rating || 0).toFixed(1)}</span>
+                        <span>
+                          {(selectedBusiness.average_rating || 0).toFixed(1)}
+                        </span>
                         <span className="rating-count">
                           ({selectedBusiness.total_reviews} reseñas)
                         </span>
@@ -854,12 +1035,20 @@ function MiNegocioContent() {
                     <div className="overview-content">
                       <div className="overview-section">
                         <h3>Descripción</h3>
-                        <p>{selectedBusiness.description || "Sin descripción"}</p>
+                        <p>
+                          {selectedBusiness.description || "Sin descripción"}
+                        </p>
                       </div>
                       <div className="overview-section">
                         <h3>Información de contacto</h3>
-                        <p><strong>Dirección:</strong> {selectedBusiness.address}, {selectedBusiness.city}</p>
-                        <p><strong>Teléfono:</strong> {selectedBusiness.phone || "No especificado"}</p>
+                        <p>
+                          <strong>Dirección:</strong> {selectedBusiness.address}
+                          , {selectedBusiness.city}
+                        </p>
+                        <p>
+                          <strong>Teléfono:</strong>{" "}
+                          {selectedBusiness.phone || "No especificado"}
+                        </p>
                       </div>
 
                       {/* Gallery Management */}
@@ -870,7 +1059,9 @@ function MiNegocioContent() {
                             Galería de imágenes
                           </h4>
                           <button
-                            onClick={() => setShowAddImageForm(!showAddImageForm)}
+                            onClick={() =>
+                              setShowAddImageForm(!showAddImageForm)
+                            }
                             className="btn-add-image"
                           >
                             <FontAwesomeIcon icon={faPlus} />
@@ -880,14 +1071,19 @@ function MiNegocioContent() {
 
                         {/* Add Image Form */}
                         {showAddImageForm && (
-                          <form onSubmit={handleAddImage} className="add-image-form">
+                          <form
+                            onSubmit={handleAddImage}
+                            className="add-image-form"
+                          >
                             <div className="form-row">
                               <div className="form-group">
                                 <label>URL de la imagen</label>
                                 <input
                                   type="url"
                                   value={newImageUrl}
-                                  onChange={(e) => setNewImageUrl(e.target.value)}
+                                  onChange={(e) =>
+                                    setNewImageUrl(e.target.value)
+                                  }
                                   placeholder="https://..."
                                   required
                                 />
@@ -897,7 +1093,9 @@ function MiNegocioContent() {
                                 <input
                                   type="text"
                                   value={newImageCaption}
-                                  onChange={(e) => setNewImageCaption(e.target.value)}
+                                  onChange={(e) =>
+                                    setNewImageCaption(e.target.value)
+                                  }
                                   placeholder="Descripción de la imagen"
                                   maxLength={255}
                                 />
@@ -935,10 +1133,21 @@ function MiNegocioContent() {
                             </div>
                           ) : (
                             galleryImages.map((image) => (
-                              <div key={image.id} className="gallery-management-item">
-                                <img src={image.image_url} alt={image.caption || "Imagen"} />
+                              <div
+                                key={image.id}
+                                className="gallery-management-item"
+                              >
+                                <Image
+                                  src={image.image_url}
+                                  alt={image.caption || "Imagen"}
+                                  fill
+                                  sizes="(max-width: 768px) 50vw, 200px"
+                                  style={{ objectFit: "cover" }}
+                                />
                                 {image.caption && (
-                                  <div className="gallery-item-caption">{image.caption}</div>
+                                  <div className="gallery-item-caption">
+                                    {image.caption}
+                                  </div>
                                 )}
                                 <button
                                   onClick={() => handleDeleteImage(image.id)}
@@ -996,8 +1205,8 @@ function MiNegocioContent() {
                                     {service.duration_minutes} min
                                   </span>
                                   <span>
-                                    <FontAwesomeIcon icon={faDollarSign} />
-                                    ${service.price.toLocaleString("es-CO")}
+                                    <FontAwesomeIcon icon={faDollarSign} />$
+                                    {service.price.toLocaleString("es-CO")}
                                   </span>
                                 </div>
                               </div>
@@ -1013,7 +1222,9 @@ function MiNegocioContent() {
                                   <FontAwesomeIcon icon={faPen} />
                                 </button>
                                 <button
-                                  onClick={() => handleDeleteService(service.id)}
+                                  onClick={() =>
+                                    handleDeleteService(service.id)
+                                  }
                                   className="btn-icon-sm btn-danger"
                                   title="Eliminar"
                                 >
@@ -1050,18 +1261,25 @@ function MiNegocioContent() {
                           {workers.map((worker) => (
                             <div key={worker.id} className="worker-item">
                               <div className="worker-avatar">
-                                {worker.full_name?.charAt(0).toUpperCase() || "?"}
+                                {worker.full_name?.charAt(0).toUpperCase() ||
+                                  "?"}
                               </div>
                               <div className="worker-info">
                                 <h4>{worker.full_name}</h4>
                                 <p>{worker.position || "Sin cargo asignado"}</p>
                                 <p className="worker-email">{worker.email}</p>
-                                {worker.schedules && worker.schedules.length > 0 && (
-                                  <p className="worker-schedule-summary">
-                                    <FontAwesomeIcon icon={faClock} />
-                                    {worker.schedules.filter(s => s.is_available).length} días configurados
-                                  </p>
-                                )}
+                                {worker.schedules &&
+                                  worker.schedules.length > 0 && (
+                                    <p className="worker-schedule-summary">
+                                      <FontAwesomeIcon icon={faClock} />
+                                      {
+                                        worker.schedules.filter(
+                                          (s) => s.is_available,
+                                        ).length
+                                      }{" "}
+                                      días configurados
+                                    </p>
+                                  )}
                               </div>
                               <div className="worker-actions">
                                 <button
@@ -1132,6 +1350,23 @@ function MiNegocioContent() {
           }}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handleConfirmAction}
+        title={
+          confirmAction?.type === "service"
+            ? "Eliminar servicio"
+            : confirmAction?.type === "worker"
+              ? "Eliminar trabajador"
+              : "Eliminar imagen"
+        }
+        message={confirmAction?.message || ""}
+        confirmText="Eliminar"
+        variant="danger"
+        loading={confirmLoading}
+      />
     </div>
   );
 }

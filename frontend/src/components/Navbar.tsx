@@ -38,30 +38,40 @@ export function Navbar() {
   const navItems = useMemo<NavItem[]>(() => {
     const items: NavItem[] = [
       { href: "/", label: "Inicio", icon: faHouse },
-      { href: "/mis-citas", label: "Mis Citas", icon: faCalendarDays, authRequired: true },
-      { href: "/favoritos", label: "Favoritos", icon: faHeart, authRequired: true },
+      {
+        href: "/mis-citas",
+        label: "Mis Citas",
+        icon: faCalendarDays,
+        authRequired: true,
+      },
+      {
+        href: "/favoritos",
+        label: "Favoritos",
+        icon: faHeart,
+        authRequired: true,
+      },
       { href: "/perfil", label: "Perfil", icon: faUser, authRequired: true },
     ];
 
     // Agregar "Mi Agenda" solo para trabajadores
     if (isWorker) {
-      items.splice(2, 0, { 
-        href: "/mi-agenda", 
-        label: "Mi Agenda", 
-        icon: faClipboardList, 
+      items.splice(2, 0, {
+        href: "/mi-agenda",
+        label: "Mi Agenda",
+        icon: faClipboardList,
         authRequired: true,
-        roles: ["WORKER"]
+        roles: ["WORKER"],
       });
     }
 
     // Agregar "Mi Negocio" solo para owners
     if (isOwner) {
-      items.push({ 
-        href: "/mi-negocio", 
-        label: "Mi Negocio", 
-        icon: faStore, 
+      items.push({
+        href: "/mi-negocio",
+        label: "Mi Negocio",
+        icon: faStore,
         authRequired: true,
-        roles: ["OWNER"]
+        roles: ["OWNER"],
       });
     }
 
@@ -73,12 +83,12 @@ export function Navbar() {
     return navItems.filter((item) => {
       // Si requiere auth y no está autenticado, no mostrar
       if (item.authRequired && !isAuthenticated) return false;
-      
+
       // Si tiene roles específicos, verificar
       if (item.roles && user) {
         return item.roles.includes(user.role);
       }
-      
+
       return true;
     });
   }, [navItems, isAuthenticated, user]);
@@ -105,9 +115,15 @@ export function Navbar() {
           {isAuthenticated && user && (
             <div className="hidden md:flex items-center gap-2 text-sm text-neutral-400">
               <span className="text-neutral-500">Hola,</span>
-              <span className="text-white font-medium">{user.fullName.split(' ')[0]}</span>
+              <span className="text-white font-medium">
+                {user.fullName.split(" ")[0]}
+              </span>
               <span className="px-2 py-0.5 text-xs bg-neutral-800 rounded-full text-neutral-300">
-                {user.role === "OWNER" ? "Dueño" : user.role === "WORKER" ? "Trabajador" : "Cliente"}
+                {user.role === "OWNER"
+                  ? "Dueño"
+                  : user.role === "WORKER"
+                    ? "Trabajador"
+                    : "Cliente"}
               </span>
             </div>
           )}
@@ -122,21 +138,35 @@ export function Navbar() {
                   href={item.href}
                   className={`navbar-link ${isActive ? "navbar-link-active" : ""}`}
                 >
-                  <FontAwesomeIcon icon={item.icon} className="navbar-link-icon" />
+                  <FontAwesomeIcon
+                    icon={item.icon}
+                    className="navbar-link-icon"
+                  />
                   <span>{item.label}</span>
                 </Link>
               );
             })}
 
             {isAuthenticated ? (
-              <button onClick={handleLogout} className="navbar-link navbar-logout">
-                <FontAwesomeIcon icon={faRightFromBracket} className="navbar-link-icon" />
+              <button
+                onClick={handleLogout}
+                className="navbar-link navbar-logout"
+              >
+                <FontAwesomeIcon
+                  icon={faRightFromBracket}
+                  className="navbar-link-icon"
+                />
                 <span>Salir</span>
               </button>
             ) : (
-              <Link href="/login" className="navbar-login-btn">
-                Iniciar Sesión
-              </Link>
+              <div className="navbar-auth-buttons">
+                <Link href="/login" className="navbar-link">
+                  Iniciar Sesión
+                </Link>
+                <Link href="/registro" className="navbar-login-btn">
+                  Registrarse
+                </Link>
+              </div>
             )}
           </div>
 
@@ -161,14 +191,19 @@ export function Navbar() {
           {isAuthenticated && user && (
             <div className="px-4 py-3 border-b border-white/10">
               <p className="text-sm text-neutral-400">
-                Hola, <span className="text-white font-medium">{user.fullName}</span>
+                Hola,{" "}
+                <span className="text-white font-medium">{user.fullName}</span>
               </p>
               <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-neutral-800 rounded-full text-neutral-300">
-                {user.role === "OWNER" ? "Dueño" : user.role === "WORKER" ? "Trabajador" : "Cliente"}
+                {user.role === "OWNER"
+                  ? "Dueño"
+                  : user.role === "WORKER"
+                    ? "Trabajador"
+                    : "Cliente"}
               </span>
             </div>
           )}
-          
+
           <div className="navbar-mobile-links">
             {visibleItems.map((item) => {
               const isActive = pathname === item.href;
@@ -179,21 +214,43 @@ export function Navbar() {
                   onClick={closeMobileMenu}
                   className={`navbar-mobile-link ${isActive ? "navbar-mobile-link-active" : ""}`}
                 >
-                  <FontAwesomeIcon icon={item.icon} className="navbar-mobile-link-icon" />
+                  <FontAwesomeIcon
+                    icon={item.icon}
+                    className="navbar-mobile-link-icon"
+                  />
                   <span>{item.label}</span>
                 </Link>
               );
             })}
 
             {isAuthenticated ? (
-              <button onClick={handleLogout} className="navbar-mobile-link navbar-mobile-logout">
-                <FontAwesomeIcon icon={faRightFromBracket} className="navbar-mobile-link-icon" />
+              <button
+                onClick={handleLogout}
+                className="navbar-mobile-link navbar-mobile-logout"
+              >
+                <FontAwesomeIcon
+                  icon={faRightFromBracket}
+                  className="navbar-mobile-link-icon"
+                />
                 <span>Cerrar Sesión</span>
               </button>
             ) : (
-              <Link href="/login" onClick={closeMobileMenu} className="navbar-mobile-login-btn">
-                Iniciar Sesión
-              </Link>
+              <>
+                <Link
+                  href="/login"
+                  onClick={closeMobileMenu}
+                  className="navbar-mobile-link"
+                >
+                  Iniciar Sesión
+                </Link>
+                <Link
+                  href="/registro"
+                  onClick={closeMobileMenu}
+                  className="navbar-mobile-login-btn"
+                >
+                  Registrarse
+                </Link>
+              </>
             )}
           </div>
         </div>
