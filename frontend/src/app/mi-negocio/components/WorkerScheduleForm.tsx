@@ -7,7 +7,15 @@ import { api } from "@/lib/api";
 import { notify } from "@/components/ui/toast";
 import type { Worker } from "@/types";
 
-const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+const DAY_NAMES = [
+  "Domingo",
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+];
 
 interface ScheduleItem {
   day_of_week: number;
@@ -23,11 +31,16 @@ interface WorkerScheduleFormProps {
   onCancel: () => void;
 }
 
-export function WorkerScheduleForm({ businessId, worker, onSave, onCancel }: WorkerScheduleFormProps) {
+export function WorkerScheduleForm({
+  businessId,
+  worker,
+  onSave,
+  onCancel,
+}: WorkerScheduleFormProps) {
   const [schedules, setSchedules] = useState<ScheduleItem[]>(() => {
     // Initialize with existing schedules or default empty schedule
     if (worker.schedules && worker.schedules.length > 0) {
-      return worker.schedules.map(s => ({
+      return worker.schedules.map((s) => ({
         day_of_week: s.day_of_week,
         start_time: s.start_time,
         end_time: s.end_time,
@@ -46,19 +59,25 @@ export function WorkerScheduleForm({ businessId, worker, onSave, onCancel }: Wor
   const [error, setError] = useState<string | null>(null);
 
   const handleToggleDay = (dayIndex: number) => {
-    setSchedules(prev => prev.map(s => 
-      s.day_of_week === dayIndex 
-        ? { ...s, is_available: !s.is_available }
-        : s
-    ));
+    setSchedules((prev) =>
+      prev.map((s) =>
+        s.day_of_week === dayIndex
+          ? { ...s, is_available: !s.is_available }
+          : s,
+      ),
+    );
   };
 
-  const handleTimeChange = (dayIndex: number, field: "start_time" | "end_time", value: string) => {
-    setSchedules(prev => prev.map(s =>
-      s.day_of_week === dayIndex
-        ? { ...s, [field]: value }
-        : s
-    ));
+  const handleTimeChange = (
+    dayIndex: number,
+    field: "start_time" | "end_time",
+    value: string,
+  ) => {
+    setSchedules((prev) =>
+      prev.map((s) =>
+        s.day_of_week === dayIndex ? { ...s, [field]: value } : s,
+      ),
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,7 +87,7 @@ export function WorkerScheduleForm({ businessId, worker, onSave, onCancel }: Wor
 
     try {
       // Only send available schedules
-      const availableSchedules = schedules.filter(s => s.is_available);
+      const availableSchedules = schedules.filter((s) => s.is_available);
       await api.setWorkerSchedule(businessId, worker.id, availableSchedules);
       notify.success("Horario guardado correctamente");
       onSave();
@@ -98,14 +117,30 @@ export function WorkerScheduleForm({ businessId, worker, onSave, onCancel }: Wor
         className="modal-container modal-large"
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem' }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: "1.75rem",
+          }}
+        >
           <h2 className="modal-title" style={{ marginBottom: 0 }}>
             Horario de {worker.full_name}
           </h2>
           <button
             type="button"
             onClick={onCancel}
-            style={{ padding: '0.5rem', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#666', cursor: 'pointer', transition: 'all 0.2s', display: 'flex' }}
+            style={{
+              padding: "0.5rem",
+              borderRadius: "10px",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#666",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              display: "flex",
+            }}
             aria-label="Cerrar"
           >
             <X size={18} />
@@ -119,8 +154,8 @@ export function WorkerScheduleForm({ businessId, worker, onSave, onCancel }: Wor
 
           <div className="schedule-grid">
             {schedules.map((schedule) => (
-              <div 
-                key={schedule.day_of_week} 
+              <div
+                key={schedule.day_of_week}
                 className={`schedule-day ${schedule.is_available ? "active" : ""}`}
               >
                 <div className="schedule-day-header">
@@ -132,9 +167,11 @@ export function WorkerScheduleForm({ businessId, worker, onSave, onCancel }: Wor
                     />
                     <span className="toggle-slider"></span>
                   </label>
-                  <span className="day-name">{DAY_NAMES[schedule.day_of_week]}</span>
+                  <span className="day-name">
+                    {DAY_NAMES[schedule.day_of_week]}
+                  </span>
                 </div>
-                
+
                 {schedule.is_available && (
                   <div className="schedule-times">
                     <div className="time-input">
@@ -142,7 +179,13 @@ export function WorkerScheduleForm({ businessId, worker, onSave, onCancel }: Wor
                       <input
                         type="time"
                         value={schedule.start_time}
-                        onChange={(e) => handleTimeChange(schedule.day_of_week, "start_time", e.target.value)}
+                        onChange={(e) =>
+                          handleTimeChange(
+                            schedule.day_of_week,
+                            "start_time",
+                            e.target.value,
+                          )
+                        }
                       />
                     </div>
                     <span className="time-separator">-</span>
@@ -151,7 +194,13 @@ export function WorkerScheduleForm({ businessId, worker, onSave, onCancel }: Wor
                       <input
                         type="time"
                         value={schedule.end_time}
-                        onChange={(e) => handleTimeChange(schedule.day_of_week, "end_time", e.target.value)}
+                        onChange={(e) =>
+                          handleTimeChange(
+                            schedule.day_of_week,
+                            "end_time",
+                            e.target.value,
+                          )
+                        }
                       />
                     </div>
                   </div>

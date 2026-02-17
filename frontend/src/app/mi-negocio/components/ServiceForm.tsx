@@ -21,7 +21,12 @@ interface ServiceFormProps {
   onCancel: () => void;
 }
 
-export function ServiceForm({ businessId, service, onSave, onCancel }: ServiceFormProps) {
+export function ServiceForm({
+  businessId,
+  service,
+  onSave,
+  onCancel,
+}: ServiceFormProps) {
   const [formData, setFormData] = useState<ServiceFormData>({
     name: service?.name || "",
     description: service?.description || "",
@@ -71,14 +76,30 @@ export function ServiceForm({ businessId, service, onSave, onCancel }: ServiceFo
         className="modal-container"
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem' }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: "1.75rem",
+          }}
+        >
           <h2 className="modal-title" style={{ marginBottom: 0 }}>
             {service ? "Editar Servicio" : "Nuevo Servicio"}
           </h2>
           <button
             type="button"
             onClick={onCancel}
-            style={{ padding: '0.5rem', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#666', cursor: 'pointer', transition: 'all 0.2s', display: 'flex' }}
+            style={{
+              padding: "0.5rem",
+              borderRadius: "10px",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#666",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              display: "flex",
+            }}
             aria-label="Cerrar"
           >
             <X size={18} />
@@ -91,7 +112,9 @@ export function ServiceForm({ businessId, service, onSave, onCancel }: ServiceFo
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               required
               placeholder="Corte de cabello"
             />
@@ -101,7 +124,9 @@ export function ServiceForm({ businessId, service, onSave, onCancel }: ServiceFo
             <label>Descripción</label>
             <textarea
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               placeholder="Describe el servicio..."
               rows={2}
             />
@@ -114,7 +139,10 @@ export function ServiceForm({ businessId, service, onSave, onCancel }: ServiceFo
                 type="number"
                 value={formData.duration_minutes}
                 onChange={(e) =>
-                  setFormData({ ...formData, duration_minutes: parseInt(e.target.value) || 0 })
+                  setFormData({
+                    ...formData,
+                    duration_minutes: parseInt(e.target.value) || 0,
+                  })
                 }
                 required
                 min={5}
@@ -127,7 +155,10 @@ export function ServiceForm({ businessId, service, onSave, onCancel }: ServiceFo
                 type="number"
                 value={formData.price}
                 onChange={(e) =>
-                  setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
+                  setFormData({
+                    ...formData,
+                    price: parseFloat(e.target.value) || 0,
+                  })
                 }
                 required
                 min={0}

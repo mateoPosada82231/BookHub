@@ -19,17 +19,20 @@ const variantStyles = {
   danger: {
     iconBg: "bg-red-500/10 border border-red-500/20",
     iconColor: "text-red-400",
-    button: "bg-gradient-to-b from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg shadow-red-500/20",
+    button:
+      "bg-gradient-to-b from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg shadow-red-500/20",
   },
   warning: {
     iconBg: "bg-yellow-500/10 border border-yellow-500/20",
     iconColor: "text-yellow-400",
-    button: "bg-gradient-to-b from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 shadow-lg shadow-yellow-500/20",
+    button:
+      "bg-gradient-to-b from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 shadow-lg shadow-yellow-500/20",
   },
   info: {
     iconBg: "bg-blue-500/10 border border-blue-500/20",
     iconColor: "text-blue-400",
-    button: "bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/20",
+    button:
+      "bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/20",
   },
 };
 
@@ -54,11 +57,17 @@ export function ConfirmDialog({
     <Modal isOpen={isOpen} onClose={onClose} size="sm" showCloseButton={false}>
       <div className="p-8">
         <div className="flex flex-col items-center text-center">
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-5 ${styles.iconBg}`}>
+          <div
+            className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-5 ${styles.iconBg}`}
+          >
             <AlertTriangle className={`w-7 h-7 ${styles.iconColor}`} />
           </div>
-          <h3 className="text-xl font-semibold text-white mb-2 tracking-tight">{title}</h3>
-          <p className="text-neutral-400 mb-8 text-[0.95rem] leading-relaxed max-w-sm">{message}</p>
+          <h3 className="text-xl font-semibold text-white mb-2 tracking-tight">
+            {title}
+          </h3>
+          <p className="text-neutral-400 mb-8 text-[0.95rem] leading-relaxed max-w-sm">
+            {message}
+          </p>
           <div className="flex gap-3 w-full">
             <button
               onClick={onClose}

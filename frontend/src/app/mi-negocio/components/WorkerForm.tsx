@@ -62,12 +62,30 @@ export function WorkerForm({ businessId, onSave, onCancel }: WorkerFormProps) {
         className="modal-container"
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem' }}>
-          <h2 className="modal-title" style={{ marginBottom: 0 }}>Agregar Trabajador</h2>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: "1.75rem",
+          }}
+        >
+          <h2 className="modal-title" style={{ marginBottom: 0 }}>
+            Agregar Trabajador
+          </h2>
           <button
             type="button"
             onClick={onCancel}
-            style={{ padding: '0.5rem', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#666', cursor: 'pointer', transition: 'all 0.2s', display: 'flex' }}
+            style={{
+              padding: "0.5rem",
+              borderRadius: "10px",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#666",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              display: "flex",
+            }}
             aria-label="Cerrar"
           >
             <X size={18} />
@@ -80,7 +98,9 @@ export function WorkerForm({ businessId, onSave, onCancel }: WorkerFormProps) {
             <input
               type="text"
               value={formData.full_name}
-              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, full_name: e.target.value })
+              }
               required
               placeholder="Juan Pérez"
             />
@@ -91,7 +111,9 @@ export function WorkerForm({ businessId, onSave, onCancel }: WorkerFormProps) {
             <input
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               required
               placeholder="juan@email.com"
             />
@@ -102,7 +124,9 @@ export function WorkerForm({ businessId, onSave, onCancel }: WorkerFormProps) {
             <input
               type="text"
               value={formData.position}
-              onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, position: e.target.value })
+              }
               placeholder="Barbero Senior"
             />
           </div>

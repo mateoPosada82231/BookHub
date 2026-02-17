@@ -80,7 +80,11 @@
 }
 
 .stat-card {
-  background: linear-gradient(135deg, rgba(21, 21, 21, 0.9) 0%, rgba(17, 17, 17, 0.8) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(21, 21, 21, 0.9) 0%,
+    rgba(17, 17, 17, 0.8) 100%
+  );
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   padding: 1.25rem;
@@ -92,7 +96,9 @@
 .stat-card:hover {
   border-color: rgba(255, 255, 255, 0.12);
   transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 30px rgba(255, 255, 255, 0.02);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.4),
+    0 0 30px rgba(255, 255, 255, 0.02);
 }
 
 .stat-card-icon {
@@ -545,9 +551,17 @@
   inset: 0;
   border-radius: 24px;
   padding: 1px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 40%);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0) 40%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
@@ -770,8 +784,12 @@
 
 /* ============ ANIMATIONS ============ */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fadeInUp {

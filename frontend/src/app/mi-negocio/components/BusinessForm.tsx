@@ -23,7 +23,11 @@ interface BusinessFormProps {
   onCancel: () => void;
 }
 
-export function BusinessForm({ business, onSave, onCancel }: BusinessFormProps) {
+export function BusinessForm({
+  business,
+  onSave,
+  onCancel,
+}: BusinessFormProps) {
   const [formData, setFormData] = useState<BusinessFormData>({
     name: business?.name || "",
     category: business?.category || "BARBERSHOP",
@@ -51,7 +55,8 @@ export function BusinessForm({ business, onSave, onCancel }: BusinessFormProps) 
       }
       onSave();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Error al guardar el negocio";
+      const errorMessage =
+        err instanceof Error ? err.message : "Error al guardar el negocio";
       setError(errorMessage);
       notify.error(errorMessage);
     } finally {
@@ -76,14 +81,30 @@ export function BusinessForm({ business, onSave, onCancel }: BusinessFormProps) 
         className="modal-container"
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem' }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: "1.75rem",
+          }}
+        >
           <h2 className="modal-title" style={{ marginBottom: 0 }}>
             {business ? "Editar Negocio" : "Nuevo Negocio"}
           </h2>
           <button
             type="button"
             onClick={onCancel}
-            style={{ padding: '0.5rem', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#666', cursor: 'pointer', transition: 'all 0.2s', display: 'flex' }}
+            style={{
+              padding: "0.5rem",
+              borderRadius: "10px",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#666",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              display: "flex",
+            }}
             aria-label="Cerrar"
           >
             <X size={18} />
@@ -96,7 +117,9 @@ export function BusinessForm({ business, onSave, onCancel }: BusinessFormProps) 
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               required
               placeholder="Mi Barbería"
             />
@@ -106,7 +129,9 @@ export function BusinessForm({ business, onSave, onCancel }: BusinessFormProps) 
             <label>Categoría</label>
             <select
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
             >
               <option value="BARBERSHOP">Barbería</option>
               <option value="HAIR_SALON">Salón de Belleza</option>
@@ -123,7 +148,9 @@ export function BusinessForm({ business, onSave, onCancel }: BusinessFormProps) 
             <label>Descripción</label>
             <textarea
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               placeholder="Describe tu negocio..."
               rows={3}
             />
@@ -135,7 +162,9 @@ export function BusinessForm({ business, onSave, onCancel }: BusinessFormProps) 
               <input
                 type="text"
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
                 required
                 placeholder="Calle 123 #45-67"
               />
@@ -145,7 +174,9 @@ export function BusinessForm({ business, onSave, onCancel }: BusinessFormProps) 
               <input
                 type="text"
                 value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, city: e.target.value })
+                }
                 required
                 placeholder="Medellín"
               />
@@ -157,7 +188,9 @@ export function BusinessForm({ business, onSave, onCancel }: BusinessFormProps) 
             <input
               type="tel"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
               placeholder="300 123 4567"
             />
           </div>
@@ -167,7 +200,9 @@ export function BusinessForm({ business, onSave, onCancel }: BusinessFormProps) 
             <input
               type="url"
               value={formData.cover_image_url}
-              onChange={(e) => setFormData({ ...formData, cover_image_url: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, cover_image_url: e.target.value })
+              }
               placeholder="https://..."
             />
           </div>

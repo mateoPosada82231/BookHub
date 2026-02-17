@@ -33,11 +33,14 @@ export function Modal({
   closeOnEscape = true,
 }: ModalProps) {
   // Handle escape key
-  const handleEscape = useCallback((e: KeyboardEvent) => {
-    if (closeOnEscape && e.key === "Escape") {
-      onClose();
-    }
-  }, [closeOnEscape, onClose]);
+  const handleEscape = useCallback(
+    (e: KeyboardEvent) => {
+      if (closeOnEscape && e.key === "Escape") {
+        onClose();
+      }
+    },
+    [closeOnEscape, onClose],
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -79,7 +82,8 @@ export function Modal({
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className={`relative w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden rounded-2xl border border-white/[0.08] shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_20px_50px_-12px_rgba(0,0,0,0.8),0_0_80px_-20px_rgba(255,255,255,0.03)]`}
             style={{
-              background: "linear-gradient(165deg, #1e1e1e 0%, #141414 40%, #0f0f0f 100%)",
+              background:
+                "linear-gradient(165deg, #1e1e1e 0%, #141414 40%, #0f0f0f 100%)",
             }}
           >
             {/* Subtle top highlight */}
@@ -89,7 +93,9 @@ export function Modal({
             {(title || showCloseButton) && (
               <div className="flex items-center justify-between px-7 py-5 border-b border-white/[0.06]">
                 {title && (
-                  <h2 className="text-xl font-semibold text-white tracking-tight">{title}</h2>
+                  <h2 className="text-xl font-semibold text-white tracking-tight">
+                    {title}
+                  </h2>
                 )}
                 {showCloseButton && (
                   <button
