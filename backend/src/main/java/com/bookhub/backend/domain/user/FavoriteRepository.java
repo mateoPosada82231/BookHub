@@ -13,10 +13,10 @@ import java.util.Optional;
 @Repository
 public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
 
-    @Query("SELECT f FROM Favorite f JOIN FETCH f.business WHERE f.user.id = :userId ORDER BY f.createdAt DESC")
+    @Query("SELECT f FROM Favorite f JOIN FETCH f.business b LEFT JOIN FETCH b.services WHERE f.user.id = :userId ORDER BY f.createdAt DESC")
     List<Favorite> findByUserIdWithBusiness(@Param("userId") Long userId);
 
-    @Query("SELECT f FROM Favorite f JOIN FETCH f.business b WHERE f.user.id = :userId ORDER BY f.createdAt DESC")
+    @Query("SELECT f FROM Favorite f JOIN FETCH f.business b LEFT JOIN FETCH b.services WHERE f.user.id = :userId ORDER BY f.createdAt DESC")
     Page<Favorite> findByUserIdWithBusiness(@Param("userId") Long userId, Pageable pageable);
 
     Optional<Favorite> findByUserIdAndBusinessId(Long userId, Long businessId);

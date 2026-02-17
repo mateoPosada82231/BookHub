@@ -17,9 +17,26 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     boolean existsByAppointmentId(Long appointmentId);
 
-    @Query("SELECT r FROM Review r JOIN r.appointment a JOIN a.worker w WHERE w.business.id = :businessId ORDER BY r.createdAt DESC")
+    @Query("""
+            SELECT r FROM Review r
+            JOIN FETCH r.appointment a
+            JOIN FETCH a.client c
+            LEFT JOIN FETCH c.profile
+            JOIN FETCH a.service
+            JOIN FETCH a.worker w
+            WHERE w.business.id = :businessId
+            ORDER BY r.createdAt DESC
+            """)
     List<Review> findByBusinessId(@Param("businessId") Long businessId);
 
-    @Query("SELECT r FROM Review r JOIN r.appointment a JOIN a.worker w WHERE w.business.id = :businessId")
+    @Query("""
+            SELECT r FROM Review r
+            JOIN FETCH r.appointment a
+            JOIN FETCH a.client c
+            LEFT JOIN FETCH c.profile
+            JOIN FETCH a.service
+            JOIN FETCH a.worker w
+            WHERE w.business.id = :businessId
+            """)
     Page<Review> findByBusinessIdPaged(@Param("businessId") Long businessId, Pageable pageable);
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowLeft,
@@ -24,11 +25,54 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { appointmentsApi } from "@/lib/api/appointments";
 import { Business, Service, Worker, WorkerSchedule, Review } from "@/types";
-import { ImageGallery } from "@/components/ImageGallery";
-import { ReviewList, ReviewsSummary } from "@/components/ReviewList";
 import Image from "next/image";
 import "@/styles/negocio.css";
 import "@/styles/reviews.css";
+
+// Lazy load heavy components that are below the fold
+const ImageGallery = dynamic(
+  () =>
+    import("@/components/ImageGallery").then((m) => ({
+      default: m.ImageGallery,
+    })),
+  {
+    loading: () => (
+      <div className="gallery-section">
+        <div
+          style={{
+            height: "200px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: 0.5,
+          }}
+        >
+          Cargando galería...
+        </div>
+      </div>
+    ),
+    ssr: false,
+  },
+);
+
+const ReviewList = dynamic(
+  () =>
+    import("@/components/ReviewList").then((m) => ({ default: m.ReviewList })),
+  {
+    loading: () => (
+      <div style={{ padding: "1rem", opacity: 0.5 }}>Cargando reseñas...</div>
+    ),
+    ssr: false,
+  },
+);
+
+const ReviewsSummary = dynamic(
+  () =>
+    import("@/components/ReviewList").then((m) => ({
+      default: m.ReviewsSummary,
+    })),
+  { ssr: false },
+);
 
 // Booking steps
 type BookingStep = "service" | "worker" | "datetime" | "confirm";

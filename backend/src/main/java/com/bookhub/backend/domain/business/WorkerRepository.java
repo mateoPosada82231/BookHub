@@ -17,6 +17,6 @@ public interface WorkerRepository extends JpaRepository<Worker, Long> {
 
     Optional<Worker> findByUserIdAndBusinessId(Long userId, Long businessId);
 
-    @Query("SELECT w FROM Worker w JOIN FETCH w.user u JOIN FETCH u.profile WHERE w.business.id = :businessId AND w.active = true")
+    @Query("SELECT DISTINCT w FROM Worker w JOIN FETCH w.user u LEFT JOIN FETCH u.profile LEFT JOIN FETCH w.schedules WHERE w.business.id = :businessId AND w.active = true")
     List<Worker> findByBusinessIdWithProfile(@Param("businessId") Long businessId);
 }

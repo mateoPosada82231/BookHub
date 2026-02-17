@@ -42,6 +42,13 @@ spring:
       # lifecycle-management: start_only
       # file: ../docker-compose.yml
 
+  # Cache Configuration
+  cache:
+    type: caffeine
+    cache-names: businesses,business-detail,worker-schedules
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=300s
+
 # Server Configuration
 server:
   port: 8082

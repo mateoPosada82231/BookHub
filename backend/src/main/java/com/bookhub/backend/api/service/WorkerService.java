@@ -214,10 +214,18 @@ public class WorkerService {
     private WorkerResponse toResponseWithSchedule(Worker worker) {
         WorkerResponse response = toResponse(worker);
 
-        List<WorkerScheduleResponse> schedules = workerScheduleRepository.findByWorkerId(worker.getId())
-                .stream()
-                .map(this::toScheduleResponse)
-                .collect(Collectors.toList());
+        // Use already-loaded schedules from @EntityGraph/FETCH JOIN when available
+        List<WorkerScheduleResponse> schedules;
+        if (worker.getSchedules() != null && !worker.getSchedules().isEmpty()) {
+            schedules = worker.getSchedules().stream()
+                    .map(this::toScheduleResponse)
+                    .collect(Collectors.toList());
+        } else {
+            schedules = workerScheduleRepository.findByWorkerId(worker.getId())
+                    .stream()
+                    .map(this::toScheduleResponse)
+                    .collect(Collectors.toList());
+        }
 
         response.setSchedules(schedules);
 

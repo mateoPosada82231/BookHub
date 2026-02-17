@@ -10,6 +10,8 @@ import com.bookhub.backend.domain.user.User;
 import com.bookhub.backend.domain.user.UserRepository;
 import com.bookhub.backend.domain.user.UserRole;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -91,6 +93,7 @@ public class BusinessService {
     /**
      * Get business by ID with full details
      */
+    @Cacheable(value = "business-detail", key = "#id")
     @Transactional(readOnly = true)
     public BusinessResponse getBusinessById(Long id) {
         Business business = businessRepository.findById(id)
@@ -142,6 +145,7 @@ public class BusinessService {
     /**
      * Update business
      */
+    @CacheEvict(value = "business-detail", key = "#businessId")
     @Transactional
     public BusinessResponse updateBusiness(Long businessId, Long userId, UpdateBusinessRequest request) {
         Business business = businessRepository.findById(businessId)
@@ -185,6 +189,7 @@ public class BusinessService {
     /**
      * Delete business (soft delete)
      */
+    @CacheEvict(value = "business-detail", key = "#businessId")
     @Transactional
     public void deleteBusiness(Long businessId, Long userId) {
         Business business = businessRepository.findById(businessId)
@@ -216,15 +221,25 @@ public class BusinessService {
     }
 
     private BusinessResponse toFullResponse(Business business) {
-        List<ServiceResponse> services = serviceRepository.findByBusinessIdAndActiveTrue(business.getId())
-                .stream()
-                .map(this::toServiceResponse)
-                .collect(Collectors.toList());
+        // Use already-loaded data from @EntityGraph instead of extra queries
+        List<ServiceResponse> services = business.getServices() != null
+                ? business.getServices().stream()
+                        .filter(com.bookhub.backend.domain.business.Service::isActive)
+                        .map(this::toServiceResponse)
+                        .collect(Collectors.toList())
+                : List.of();
 
-        List<WorkerResponse> workers = workerRepository.findByBusinessIdWithProfile(business.getId())
-                .stream()
-                .map(this::toWorkerResponse)
-                .collect(Collectors.toList());
+        // Workers loaded via @EntityGraph may not have profiles fetched,
+        // so use the dedicated query only when workers aren't already initialized with profiles
+        List<WorkerResponse> workers;
+        if (business.getWorkers() != null && !business.getWorkers().isEmpty()) {
+            workers = workerRepository.findByBusinessIdWithProfile(business.getId())
+                    .stream()
+                    .map(this::toWorkerResponse)
+                    .collect(Collectors.toList());
+        } else {
+            workers = List.of();
+        }
 
         List<String> galleryImages = business.getGalleryImages() != null
                 ? business.getGalleryImages().stream()

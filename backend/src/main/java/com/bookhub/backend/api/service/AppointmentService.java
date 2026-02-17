@@ -12,6 +12,7 @@ import com.bookhub.backend.domain.business.*;
 import com.bookhub.backend.domain.user.User;
 import com.bookhub.backend.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -252,6 +253,10 @@ public class AppointmentService {
     /**
      * Create a review for a completed appointment
      */
+    /**
+     * Create a review for a completed appointment
+     */
+    @CacheEvict(value = "business-detail", allEntries = true)
     @Transactional
     public ReviewResponse createReview(Long appointmentId, Long clientId, CreateReviewRequest request) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
@@ -359,20 +364,18 @@ public class AppointmentService {
     }
 
     private void updateBusinessRating(Long businessId) {
-        List<Review> reviews = reviewRepository.findByBusinessId(businessId);
+        Object[] stats = appointmentRepository.calculateBusinessRatingStats(businessId);
 
-        if (reviews.isEmpty()) {
+        if (stats[0] == null) {
             return;
         }
 
-        double average = reviews.stream()
-                .mapToInt(Review::getRating)
-                .average()
-                .orElse(0.0);
+        double average = ((Number) stats[0]).doubleValue();
+        long count = ((Number) stats[1]).longValue();
 
         Business business = businessRepository.findById(businessId).orElseThrow();
         business.setAverageRating(BigDecimal.valueOf(average).setScale(1, RoundingMode.HALF_UP));
-        business.setTotalReviews(reviews.size());
+        business.setTotalReviews((int) count);
         businessRepository.save(business);
     }
 
