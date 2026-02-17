@@ -17,6 +17,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/context/AuthContext";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import "@/styles/home.css";
 
 interface NavItem {
@@ -33,6 +34,8 @@ export function Navbar() {
   const pathname = usePathname();
   const { user, isAuthenticated, isOwner, isWorker, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
 
   // Items de navegación basados en roles
   const navItems = useMemo<NavItem[]>(() => {
@@ -93,9 +96,21 @@ export function Navbar() {
     });
   }, [navItems, isAuthenticated, user]);
 
-  const handleLogout = async () => {
-    await logout();
-    setIsMobileMenuOpen(false);
+  const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = async () => {
+    setLogoutLoading(true);
+    try {
+      await logout();
+      setIsMobileMenuOpen(false);
+      setShowLogoutConfirm(false);
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    } finally {
+      setLogoutLoading(false);
+    }
   };
 
   const closeMobileMenu = () => {
@@ -282,6 +297,19 @@ export function Navbar() {
           </div>
         </div>
       )}
+
+      {/* Modal de confirmación para logout */}
+      <ConfirmDialog
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={handleConfirmLogout}
+        title="Cerrar Sesión"
+        message="¿Estás seguro de que quieres cerrar sesión?"
+        confirmText="Cerrar Sesión"
+        cancelText="Cancelar"
+        variant="warning"
+        loading={logoutLoading}
+      />
     </nav>
   );
 }

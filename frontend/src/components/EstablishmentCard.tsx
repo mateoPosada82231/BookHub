@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback } from "react";
+import { memo, useCallback, useState } from "react";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -11,9 +11,11 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
 import type { BusinessSummary } from "@/types";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 // Imagen por defecto si no hay cover image
-const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=400&h=300&fit=crop";
+const DEFAULT_IMAGE =
+  "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=400&h=300&fit=crop";
 
 interface EstablishmentCardProps {
   business: BusinessSummary;
@@ -28,13 +30,35 @@ function EstablishmentCardComponent({
   onToggleFavorite,
   onViewDetails,
 }: EstablishmentCardProps) {
+  const [showRemoveFavoriteConfirm, setShowRemoveFavoriteConfirm] =
+    useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
   const handleFavoriteClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      onToggleFavorite(business.id);
+
+      if (isFavorite) {
+        // Si ya es favorito, mostrar confirmación para remover
+        setShowRemoveFavoriteConfirm(true);
+      } else {
+        // Si no es favorito, añadir directamente
+        onToggleFavorite(business.id);
+      }
     },
-    [business.id, onToggleFavorite]
+    [business.id, isFavorite, onToggleFavorite],
   );
+
+  const handleConfirmRemoveFavorite = async () => {
+    setFavoriteLoading(true);
+    try {
+      onToggleFavorite(business.id);
+    } catch (error) {
+      console.error("Error al remover favorito:", error);
+    } finally {
+      setFavoriteLoading(false);
+      setShowRemoveFavoriteConfirm(false);
+    }
+  };
 
   const handleViewDetails = useCallback(() => {
     onViewDetails(business.id);
@@ -61,7 +85,9 @@ function EstablishmentCardComponent({
         <button
           onClick={handleFavoriteClick}
           className="favorite-button"
-          aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
+          aria-label={
+            isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"
+          }
         >
           <FontAwesomeIcon
             icon={isFavorite ? faHeartSolid : faHeartRegular}
@@ -115,6 +141,19 @@ function EstablishmentCardComponent({
           Ver disponibilidad
         </button>
       </div>
+
+      {/* Modal de confirmación para remover favorito */}
+      <ConfirmDialog
+        isOpen={showRemoveFavoriteConfirm}
+        onClose={() => setShowRemoveFavoriteConfirm(false)}
+        onConfirm={handleConfirmRemoveFavorite}
+        title="Remover de Favoritos"
+        message={`¿Estás seguro de que quieres remover ${business.name} de tus favoritos?`}
+        confirmText="Remover"
+        cancelText="Cancelar"
+        variant="warning"
+        loading={favoriteLoading}
+      />
     </article>
   );
 }

@@ -1,8 +1,13 @@
 "use client";
 
-import { memo, useCallback } from "react";
+import { memo, useCallback, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faLocationDot } from "@fortawesome/free-solid-svg-icons";
+import {
+  faSearch,
+  faLocationDot,
+  faLocationCrosshairs,
+  faSpinner,
+} from "@fortawesome/free-solid-svg-icons";
 
 interface SearchBarProps {
   searchQuery: string;
@@ -19,14 +24,72 @@ function SearchBarComponent({
   onLocationChange,
   onSearch,
 }: SearchBarProps) {
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const handleSearchKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter") {
         onSearch();
       }
     },
-    [onSearch]
+    [onSearch],
   );
+
+  const handleGetCurrentLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocationError("La geolocalización no está disponible en tu navegador");
+      return;
+    }
+
+    setIsGettingLocation(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+
+          // Por ahora establecemos coordenadas como string
+          // En el futuro, aquí iría la llamada al servicio de geocoding reverso
+          const locationString = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+
+          // TODO: Reemplazar con llamada a API de geocoding reverso
+          // const response = await fetch(`/api/geocode/reverse?lat=${latitude}&lng=${longitude}`);
+          // const data = await response.json();
+          // onLocationChange(data.city || locationString);
+
+          onLocationChange(locationString);
+        } catch (error) {
+          console.error("Error al obtener la dirección:", error);
+          setLocationError("Error al obtener la dirección");
+        } finally {
+          setIsGettingLocation(false);
+        }
+      },
+      (error) => {
+        setIsGettingLocation(false);
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setLocationError("Permiso de ubicación denegado");
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setLocationError("Ubicación no disponible");
+            break;
+          case error.TIMEOUT:
+            setLocationError("Tiempo de espera agotado");
+            break;
+          default:
+            setLocationError("Error desconocido al obtener ubicación");
+            break;
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000, // 5 minutos
+      },
+    );
+  }, [onLocationChange]);
 
   return (
     <div className="search-container">
@@ -54,6 +117,19 @@ function SearchBarComponent({
             className="search-input"
             aria-label="Ubicación"
           />
+          <button
+            type="button"
+            onClick={handleGetCurrentLocation}
+            disabled={isGettingLocation}
+            className="location-button"
+            aria-label="Usar mi ubicación actual"
+            title="Usar mi ubicación actual"
+          >
+            <FontAwesomeIcon
+              icon={isGettingLocation ? faSpinner : faLocationCrosshairs}
+              className={`location-button-icon ${isGettingLocation ? "fa-spin" : ""}`}
+            />
+          </button>
         </div>
         <button
           onClick={onSearch}
@@ -64,6 +140,13 @@ function SearchBarComponent({
           <span>Buscar</span>
         </button>
       </div>
+
+      {/* Mostrar errores de ubicación */}
+      {locationError && (
+        <div className="location-error" role="alert">
+          {locationError}
+        </div>
+      )}
     </div>
   );
 }

@@ -26,6 +26,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { api } from "@/lib/api";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import "@/styles/perfil.css";
 
 function PerfilContent() {
@@ -34,6 +35,8 @@ function PerfilContent() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [stats, setStats] = useState({
     appointments: 0,
@@ -108,8 +111,20 @@ function PerfilContent() {
   };
 
   const handleLogout = () => {
-    logout();
-    router.push("/");
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = async () => {
+    setLogoutLoading(true);
+    try {
+      await logout();
+      router.push("/");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    } finally {
+      setLogoutLoading(false);
+      setShowLogoutConfirm(false);
+    }
   };
 
   if (!user) {
@@ -412,6 +427,19 @@ function PerfilContent() {
           </motion.button>
         </div>
       </main>
+
+      {/* Modal de confirmación para logout */}
+      <ConfirmDialog
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={handleConfirmLogout}
+        title="Cerrar Sesión"
+        message="¿Estás seguro de que quieres cerrar sesión?"
+        confirmText="Cerrar Sesión"
+        cancelText="Cancelar"
+        variant="warning"
+        loading={logoutLoading}
+      />
     </div>
   );
 }
