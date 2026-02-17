@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
+import { X } from "lucide-react";
 import { api } from "@/lib/api";
 import { notify } from "@/components/ui/toast";
 import type { Worker } from "@/types";
@@ -80,11 +82,35 @@ export function WorkerScheduleForm({ businessId, worker, onSave, onCancel }: Wor
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-container modal-large">
-        <h2 className="modal-title">
-          Horario de {worker.full_name}
-        </h2>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="modal-overlay"
+      onClick={onCancel}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.92, y: 24 }}
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        className="modal-container modal-large"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem' }}>
+          <h2 className="modal-title" style={{ marginBottom: 0 }}>
+            Horario de {worker.full_name}
+          </h2>
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{ padding: '0.5rem', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#666', cursor: 'pointer', transition: 'all 0.2s', display: 'flex' }}
+            aria-label="Cerrar"
+          >
+            <X size={18} />
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="modal-form">
           <p className="schedule-instructions">
@@ -145,7 +171,7 @@ export function WorkerScheduleForm({ businessId, worker, onSave, onCancel }: Wor
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

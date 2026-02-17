@@ -16,10 +16,10 @@ interface ModalProps {
 }
 
 const sizeClasses = {
-  sm: "max-w-md",
-  md: "max-w-lg",
-  lg: "max-w-2xl",
-  xl: "max-w-4xl",
+  sm: "max-w-lg",
+  md: "max-w-xl",
+  lg: "max-w-3xl",
+  xl: "max-w-5xl",
 };
 
 export function Modal({
@@ -64,41 +64,47 @@ export function Modal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
           onClick={handleOverlayClick}
         >
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
 
           {/* Modal Content */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.9, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.2 }}
-            className={`relative w-full ${sizeClasses[size]} bg-[#1a1a1a] rounded-xl shadow-2xl border border-white/10 max-h-[90vh] overflow-hidden`}
+            exit={{ opacity: 0, scale: 0.9, y: 30 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className={`relative w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden rounded-2xl border border-white/[0.08] shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_20px_50px_-12px_rgba(0,0,0,0.8),0_0_80px_-20px_rgba(255,255,255,0.03)]`}
+            style={{
+              background: "linear-gradient(165deg, #1e1e1e 0%, #141414 40%, #0f0f0f 100%)",
+            }}
           >
+            {/* Subtle top highlight */}
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
             {/* Header */}
             {(title || showCloseButton) && (
-              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+              <div className="flex items-center justify-between px-7 py-5 border-b border-white/[0.06]">
                 {title && (
-                  <h2 className="text-xl font-semibold text-white">{title}</h2>
+                  <h2 className="text-xl font-semibold text-white tracking-tight">{title}</h2>
                 )}
                 {showCloseButton && (
                   <button
                     onClick={onClose}
-                    className="p-2 rounded-lg hover:bg-white/10 transition-colors text-neutral-400 hover:text-white"
+                    className="p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/10 border border-white/[0.06] hover:border-white/10 transition-all duration-200 text-neutral-500 hover:text-white group"
                     aria-label="Cerrar modal"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4.5 h-4.5 transition-transform duration-200 group-hover:rotate-90" />
                   </button>
                 )}
               </div>
             )}
 
             {/* Body */}
-            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)] scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
               {children}
             </div>
           </motion.div>
