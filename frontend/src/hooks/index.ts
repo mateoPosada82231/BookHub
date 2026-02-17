@@ -16,3 +16,4 @@ export {
   useBusinessImages,
   useWorkerAvailability,
 } from "./useSWR";
+export { useGeolocation } from "./useGeolocation";
