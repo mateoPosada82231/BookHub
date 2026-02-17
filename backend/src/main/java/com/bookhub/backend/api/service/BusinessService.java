@@ -4,6 +4,7 @@ import com.bookhub.backend.api.dto.business.*;
 import com.bookhub.backend.api.dto.common.PageResponse;
 import com.bookhub.backend.api.exception.ForbiddenException;
 import com.bookhub.backend.api.exception.ResourceNotFoundException;
+import com.bookhub.backend.config.InputSanitizer;
 import com.bookhub.backend.domain.business.*;
 import com.bookhub.backend.domain.user.User;
 import com.bookhub.backend.domain.user.UserRepository;
@@ -27,6 +28,7 @@ public class BusinessService {
     private final UserRepository userRepository;
     private final ServiceRepository serviceRepository;
     private final WorkerRepository workerRepository;
+    private final InputSanitizer sanitizer;
 
     /**
      * Search businesses with filters and pagination
@@ -36,10 +38,13 @@ public class BusinessService {
             String query,
             BusinessCategory category,
             String city,
+            String sortBy,
+            Double minRating,
             int page,
             int size) {
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("averageRating").descending());
+        Sort sort = resolveSort(sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
         Page<Business> businesses;
 
         if (query != null && !query.isBlank() && category != null) {
@@ -53,6 +58,7 @@ public class BusinessService {
         }
 
         List<BusinessSummaryResponse> content = businesses.getContent().stream()
+                .filter(b -> minRating == null || b.getAverageRating().doubleValue() >= minRating)
                 .map(this::toSummaryResponse)
                 .collect(Collectors.toList());
 
@@ -66,6 +72,20 @@ public class BusinessService {
                 .last(businesses.isLast())
                 .empty(businesses.isEmpty())
                 .build();
+    }
+
+    /**
+     * Resolve sort order from string parameter
+     */
+    private Sort resolveSort(String sortBy) {
+        if (sortBy == null) {
+            return Sort.by("averageRating").descending();
+        }
+        return switch (sortBy.toLowerCase()) {
+            case "name" -> Sort.by("name").ascending();
+            case "newest" -> Sort.by("createdAt").descending();
+            default -> Sort.by("averageRating").descending();
+        };
     }
 
     /**
@@ -104,13 +124,13 @@ public class BusinessService {
 
         Business business = Business.builder()
                 .owner(owner)
-                .name(request.getName())
+                .name(sanitizer.sanitize(request.getName()))
                 .category(request.getCategory())
-                .description(request.getDescription())
-                .address(request.getAddress())
-                .city(request.getCity())
-                .phone(request.getPhone())
-                .coverImageUrl(request.getCoverImageUrl())
+                .description(sanitizer.sanitize(request.getDescription()))
+                .address(sanitizer.sanitize(request.getAddress()))
+                .city(sanitizer.sanitize(request.getCity()))
+                .phone(sanitizer.sanitize(request.getPhone()))
+                .coverImageUrl(sanitizer.sanitizeUrl(request.getCoverImageUrl()))
                 .active(true)
                 .build();
 
@@ -133,25 +153,25 @@ public class BusinessService {
         }
 
         if (request.getName() != null) {
-            business.setName(request.getName());
+            business.setName(sanitizer.sanitize(request.getName()));
         }
         if (request.getCategory() != null) {
             business.setCategory(request.getCategory());
         }
         if (request.getDescription() != null) {
-            business.setDescription(request.getDescription());
+            business.setDescription(sanitizer.sanitize(request.getDescription()));
         }
         if (request.getAddress() != null) {
-            business.setAddress(request.getAddress());
+            business.setAddress(sanitizer.sanitize(request.getAddress()));
         }
         if (request.getCity() != null) {
-            business.setCity(request.getCity());
+            business.setCity(sanitizer.sanitize(request.getCity()));
         }
         if (request.getPhone() != null) {
-            business.setPhone(request.getPhone());
+            business.setPhone(sanitizer.sanitize(request.getPhone()));
         }
         if (request.getCoverImageUrl() != null) {
-            business.setCoverImageUrl(request.getCoverImageUrl());
+            business.setCoverImageUrl(sanitizer.sanitizeUrl(request.getCoverImageUrl()));
         }
         if (request.getActive() != null) {
             business.setActive(request.getActive());

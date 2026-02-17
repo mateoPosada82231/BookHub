@@ -1142,6 +1142,7 @@ function MiNegocioContent() {
                                   alt={image.caption || "Imagen"}
                                   fill
                                   sizes="(max-width: 768px) 50vw, 200px"
+                                  loading="lazy"
                                   style={{ objectFit: "cover" }}
                                 />
                                 {image.caption && (

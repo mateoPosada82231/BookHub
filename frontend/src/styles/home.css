@@ -616,6 +616,7 @@
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
 .filter-button:hover {
@@ -625,9 +626,175 @@
   transform: translateY(-2px);
 }
 
+.filter-button-active {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 .filter-icon {
   width: 0.875rem;
   height: 0.875rem;
+}
+
+/* Filter Panel */
+.filter-controls-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.filter-panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: 280px;
+  background-color: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1rem;
+  z-index: 50;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  animation: filterPanelIn 0.2s ease-out;
+}
+
+@keyframes filterPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.filter-panel-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.filter-panel-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  font-size: 1rem;
+  transition: color 0.2s;
+}
+
+.filter-panel-close:hover {
+  color: var(--text-primary);
+}
+
+.filter-section {
+  margin-bottom: 1rem;
+}
+
+.filter-section-title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.filter-sort-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.filter-sort-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-sort-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.filter-sort-btn-active {
+  background: rgba(var(--primary-rgb, 168, 85, 247), 0.15);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.filter-rating-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.filter-rating-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-rating-btn:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+}
+
+.filter-rating-btn-active {
+  background: rgba(250, 204, 21, 0.15);
+  border-color: #facc15;
+  color: #facc15;
+  font-weight: 500;
+}
+
+.filter-star-icon {
+  font-size: 0.6875rem;
+  color: #facc15;
+}
+
+.filter-reset-btn {
+  width: 100%;
+  padding: 0.5rem;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 0.25rem;
+}
+
+.filter-reset-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
 }
 
 /* Grid */

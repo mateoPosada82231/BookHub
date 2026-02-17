@@ -196,6 +196,7 @@ function PerfilContent() {
                       width={96}
                       height={96}
                       className="profile-avatar-img"
+                      loading="lazy"
                       style={{ objectFit: "cover", borderRadius: "50%" }}
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = "none";

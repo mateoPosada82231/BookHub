@@ -35,10 +35,12 @@ public class BusinessController {
             @RequestParam(required = false) String query,
             @RequestParam(required = false) BusinessCategory category,
             @RequestParam(required = false) String city,
+            @RequestParam(required = false) @Parameter(description = "Ordenar por: rating, name, newest") String sortBy,
+            @RequestParam(required = false) @Parameter(description = "Rating mínimo (1-5)") Double minRating,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        return ResponseEntity.ok(businessService.searchBusinesses(query, category, city, page, size));
+        return ResponseEntity.ok(businessService.searchBusinesses(query, category, city, sortBy, minRating, page, size));
     }
 
     /**

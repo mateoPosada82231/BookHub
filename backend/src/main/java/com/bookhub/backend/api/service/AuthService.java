@@ -7,6 +7,7 @@ import com.bookhub.backend.api.dto.auth.RegisterRequest;
 import com.bookhub.backend.api.exception.BadRequestException;
 import com.bookhub.backend.api.exception.ResourceNotFoundException;
 import com.bookhub.backend.api.exception.UnauthorizedException;
+import com.bookhub.backend.config.InputSanitizer;
 import com.bookhub.backend.config.JwtService;
 import com.bookhub.backend.config.SecurityUser;
 import com.bookhub.backend.domain.user.*;
@@ -35,6 +36,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
+    private final InputSanitizer sanitizer;
 
     @Value("${app.jwt.refresh-expiration-ms}")
     private long refreshExpirationMs;
@@ -47,6 +49,14 @@ public class AuthService {
 
     @Value("${app.dev-mode:true}")
     private boolean devMode;
+
+    /**
+     * Returns whether the application is running in development mode.
+     * Used to control exposure of sensitive debug information.
+     */
+    public boolean isDevMode() {
+        return devMode;
+    }
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -65,8 +75,8 @@ public class AuthService {
         // Create Profile
         var profile = Profile.builder()
                 .user(user)
-                .fullName(request.getFullName())
-                .phone(request.getPhone())
+                .fullName(sanitizer.sanitize(request.getFullName()))
+                .phone(sanitizer.sanitize(request.getPhone()))
                 .build();
 
         user.setProfile(profile);

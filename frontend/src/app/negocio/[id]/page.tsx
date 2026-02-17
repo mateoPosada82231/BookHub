@@ -545,6 +545,7 @@ function NegocioContent() {
                                 alt={worker.full_name}
                                 width={48}
                                 height={48}
+                                loading="lazy"
                                 style={{
                                   objectFit: "cover",
                                   borderRadius: "50%",

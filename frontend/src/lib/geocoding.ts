@@ -21,33 +21,55 @@ export interface AutocompleteResult {
 }
 
 /**
- * Placeholder para geocoding reverso
- * TODO: Implementar con Google Maps API, OpenStreetMap Nominatim, o servicio similar
+ * Geocoding reverso usando OpenStreetMap Nominatim (gratuito, sin API key)
  */
 export async function reverseGeocode(
   latitude: number,
   longitude: number,
 ): Promise<GeocodeResult> {
-  // Implementación placeholder
-  // En producción, esto haría una llamada a la API de geocoding
-  return {
-    address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-    city: "Ciudad detectada",
-    country: "País",
-    latitude,
-    longitude,
-  };
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=es`,
+      {
+        headers: {
+          "User-Agent": "BookHub/1.0",
+        },
+      },
+    );
 
-  // Ejemplo de implementación con Google Maps:
-  // try {
-  //   const response = await fetch(
-  //     `/api/geocode/reverse?lat=${latitude}&lng=${longitude}`
-  //   );
-  //   const data = await response.json();
-  //   return data;
-  // } catch (error) {
-  //   throw new Error('Error al obtener la dirección');
-  // }
+    if (!response.ok) {
+      throw new Error(`Nominatim error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const address = data.address || {};
+    const city =
+      address.city ||
+      address.town ||
+      address.village ||
+      address.municipality ||
+      address.county ||
+      "";
+
+    return {
+      address:
+        data.display_name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+      city,
+      country: address.country || "",
+      latitude,
+      longitude,
+    };
+  } catch (error) {
+    console.error("Error en geocoding reverso:", error);
+    // Fallback: devolver coordenadas formateadas
+    return {
+      address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+      city: "",
+      country: "",
+      latitude,
+      longitude,
+    };
+  }
 }
 
 /**

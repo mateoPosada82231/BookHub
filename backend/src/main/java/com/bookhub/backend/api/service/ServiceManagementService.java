@@ -4,6 +4,7 @@ import com.bookhub.backend.api.dto.business.*;
 import com.bookhub.backend.api.exception.BadRequestException;
 import com.bookhub.backend.api.exception.ForbiddenException;
 import com.bookhub.backend.api.exception.ResourceNotFoundException;
+import com.bookhub.backend.config.InputSanitizer;
 import com.bookhub.backend.domain.business.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ public class ServiceManagementService {
 
     private final ServiceRepository serviceRepository;
     private final BusinessRepository businessRepository;
+    private final InputSanitizer sanitizer;
 
     /**
      * Get all services for a business
@@ -55,11 +57,11 @@ public class ServiceManagementService {
 
         com.bookhub.backend.domain.business.Service service = com.bookhub.backend.domain.business.Service.builder()
                 .business(business)
-                .name(request.getName())
-                .description(request.getDescription())
+                .name(sanitizer.sanitize(request.getName()))
+                .description(sanitizer.sanitize(request.getDescription()))
                 .durationMinutes(request.getDurationMinutes())
                 .price(request.getPrice())
-                .imageUrl(request.getImageUrl())
+                .imageUrl(sanitizer.sanitizeUrl(request.getImageUrl()))
                 .active(true)
                 .build();
 
@@ -82,10 +84,10 @@ public class ServiceManagementService {
         }
 
         if (request.getName() != null) {
-            service.setName(request.getName());
+            service.setName(sanitizer.sanitize(request.getName()));
         }
         if (request.getDescription() != null) {
-            service.setDescription(request.getDescription());
+            service.setDescription(sanitizer.sanitize(request.getDescription()));
         }
         if (request.getDurationMinutes() != null) {
             service.setDurationMinutes(request.getDurationMinutes());
@@ -94,7 +96,7 @@ public class ServiceManagementService {
             service.setPrice(request.getPrice());
         }
         if (request.getImageUrl() != null) {
-            service.setImageUrl(request.getImageUrl());
+            service.setImageUrl(sanitizer.sanitizeUrl(request.getImageUrl()));
         }
         if (request.getActive() != null) {
             service.setActive(request.getActive());

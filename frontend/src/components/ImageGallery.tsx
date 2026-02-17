@@ -73,6 +73,7 @@ export function ImageGallery({ images, businessName }: ImageGalleryProps) {
                 fill
                 sizes="(max-width: 768px) 50vw, 33vw"
                 className="gallery-img"
+                loading="lazy"
                 style={{ objectFit: "cover" }}
               />
               {index === 5 && images.length > 6 && (

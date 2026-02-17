@@ -3,6 +3,7 @@ package com.bookhub.backend.api.service;
 import com.bookhub.backend.api.dto.user.*;
 import com.bookhub.backend.api.exception.BadRequestException;
 import com.bookhub.backend.api.exception.ResourceNotFoundException;
+import com.bookhub.backend.config.InputSanitizer;
 import com.bookhub.backend.domain.user.Profile;
 import com.bookhub.backend.domain.user.User;
 import com.bookhub.backend.domain.user.UserRepository;
@@ -17,6 +18,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final InputSanitizer sanitizer;
 
     /**
      * Get user profile by ID
@@ -54,16 +56,16 @@ public class UserService {
         }
 
         if (request.getFullName() != null) {
-            profile.setFullName(request.getFullName());
+            profile.setFullName(sanitizer.sanitize(request.getFullName()));
         }
         if (request.getBio() != null) {
-            profile.setBio(request.getBio());
+            profile.setBio(sanitizer.sanitize(request.getBio()));
         }
         if (request.getPhone() != null) {
-            profile.setPhone(request.getPhone());
+            profile.setPhone(sanitizer.sanitize(request.getPhone()));
         }
         if (request.getAvatarUrl() != null) {
-            profile.setAvatarUrl(request.getAvatarUrl());
+            profile.setAvatarUrl(sanitizer.sanitizeUrl(request.getAvatarUrl()));
         }
 
         userRepository.save(user);

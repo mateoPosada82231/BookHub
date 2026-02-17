@@ -4,6 +4,7 @@ import { memo, useCallback } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFilter, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { EstablishmentCard } from "./EstablishmentCard";
+import { FilterPanel, type FilterOptions } from "./FilterPanel";
 import type { BusinessSummary } from "@/types";
 
 interface EstablishmentGridProps {
@@ -11,6 +12,11 @@ interface EstablishmentGridProps {
   favorites: Set<number> | number[];
   onToggleFavorite: (id: number) => void;
   onViewDetails: (id: number) => void;
+  showFilterPanel?: boolean;
+  onFilterToggle?: () => void;
+  filters?: FilterOptions;
+  onFilterApply?: (filters: FilterOptions) => void;
+  onFilterClose?: () => void;
 }
 
 function EstablishmentGridComponent({
@@ -18,12 +24,20 @@ function EstablishmentGridComponent({
   favorites,
   onToggleFavorite,
   onViewDetails,
+  showFilterPanel = false,
+  onFilterToggle,
+  filters,
+  onFilterApply,
+  onFilterClose,
 }: EstablishmentGridProps) {
   const isFavorite = useCallback(
     (id: number) =>
       favorites instanceof Set ? favorites.has(id) : favorites.includes(id),
     [favorites],
   );
+
+  const hasActiveFilters =
+    filters && (filters.sortBy !== "rating" || filters.minRating > 0);
 
   return (
     <section className="establishments-section">
@@ -34,6 +48,26 @@ function EstablishmentGridComponent({
             <span className="results-number">{businesses.length}</span> lugares
             encontrados
           </p>
+          {onFilterToggle && (
+            <div className="filter-controls-wrapper">
+              <button
+                onClick={onFilterToggle}
+                className={`filter-button ${hasActiveFilters ? "filter-button-active" : ""}`}
+                aria-label="Abrir filtros"
+              >
+                <FontAwesomeIcon icon={faFilter} className="filter-icon" />
+                <span>Filtros</span>
+              </button>
+              {filters && onFilterApply && onFilterClose && (
+                <FilterPanel
+                  isOpen={showFilterPanel}
+                  onClose={onFilterClose}
+                  filters={filters}
+                  onApply={onFilterApply}
+                />
+              )}
+            </div>
+          )}
         </div>
 
         {/* Grid */}

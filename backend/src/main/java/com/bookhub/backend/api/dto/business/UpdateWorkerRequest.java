@@ -1,5 +1,6 @@
 package com.bookhub.backend.api.dto.business;
 
+import com.bookhub.backend.api.validation.AtLeastOneNotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@AtLeastOneNotNull
 public class UpdateWorkerRequest {
 
     @Size(max = 100, message = "La posición no puede exceder 100 caracteres")

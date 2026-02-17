@@ -427,6 +427,7 @@ function MiAgendaContent() {
                     alt={selectedBusiness.name}
                     fill
                     sizes="120px"
+                    loading="lazy"
                     style={{ objectFit: "cover" }}
                   />
                 ) : (

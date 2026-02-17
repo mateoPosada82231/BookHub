@@ -1,5 +1,6 @@
 package com.bookhub.backend.api.dto.business;
 
+import com.bookhub.backend.api.validation.AtLeastOneNotNull;
 import com.bookhub.backend.domain.business.BusinessCategory;
 import jakarta.validation.constraints.Size;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -12,6 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@AtLeastOneNotNull
 public class UpdateBusinessRequest {
 
     @Size(max = 255, message = "El nombre no puede exceder 255 caracteres")

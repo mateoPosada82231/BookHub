@@ -6,6 +6,7 @@ import com.bookhub.backend.api.exception.BadRequestException;
 import com.bookhub.backend.api.exception.ConflictException;
 import com.bookhub.backend.api.exception.ForbiddenException;
 import com.bookhub.backend.api.exception.ResourceNotFoundException;
+import com.bookhub.backend.config.InputSanitizer;
 import com.bookhub.backend.domain.booking.*;
 import com.bookhub.backend.domain.business.*;
 import com.bookhub.backend.domain.user.User;
@@ -38,6 +39,7 @@ public class AppointmentService {
     private final WorkerScheduleRepository workerScheduleRepository;
     private final UserRepository userRepository;
     private final BusinessRepository businessRepository;
+    private final InputSanitizer sanitizer;
 
     /**
      * Create a new appointment
@@ -93,7 +95,7 @@ public class AppointmentService {
                 .startTime(startTime)
                 .endTime(endTime)
                 .status(AppointmentStatus.PENDING)
-                .clientNotes(request.getClientNotes())
+                .clientNotes(sanitizer.sanitize(request.getClientNotes()))
                 .build();
 
         appointment = appointmentRepository.save(appointment);
@@ -208,7 +210,7 @@ public class AppointmentService {
             appointment.setStatus(request.getStatus());
 
             if (request.getStatus() == AppointmentStatus.CANCELLED) {
-                appointment.setCancellationReason(request.getCancellationReason());
+                appointment.setCancellationReason(sanitizer.sanitize(request.getCancellationReason()));
             }
         }
 
@@ -240,7 +242,7 @@ public class AppointmentService {
         }
 
         appointment.setStatus(AppointmentStatus.CANCELLED);
-        appointment.setCancellationReason(reason);
+        appointment.setCancellationReason(sanitizer.sanitize(reason));
 
         appointment = appointmentRepository.save(appointment);
 
@@ -273,7 +275,7 @@ public class AppointmentService {
         Review review = Review.builder()
                 .appointment(appointment)
                 .rating(request.getRating())
-                .comment(request.getComment())
+                .comment(sanitizer.sanitize(request.getComment()))
                 .build();
 
         review = reviewRepository.save(review);

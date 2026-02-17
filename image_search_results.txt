@@ -1,0 +1,16 @@
+﻿
+frontend\src\app\mi-agenda\page.tsx:425:                  <Image
+frontend\src\app\mi-negocio\page.tsx:933:                  <Image
+frontend\src\app\mi-negocio\page.tsx:1140:                                
+<Image
+frontend\src\app\negocio\[id]\page.tsx:417:                <Image
+frontend\src\app\negocio\[id]\page.tsx:543:                              <Image
+frontend\src\app\negocio\[id]\page.tsx:820:            <ImageGallery
+frontend\src\app\perfil\page.tsx:193:                    <Image
+frontend\src\components\EstablishmentCard.tsx:74:        <Image
+frontend\src\components\ImageGallery.tsx:55:          <ImageIcon size={20} />
+frontend\src\components\ImageGallery.tsx:70:              <Image
+frontend\src\components\ImageGallery.tsx:122:              <Image
+frontend\src\components\ReviewList.tsx:43:              <Image
+
+

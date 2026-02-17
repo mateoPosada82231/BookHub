@@ -1,5 +1,6 @@
 package com.bookhub.backend.api.dto.business;
 
+import com.bookhub.backend.api.validation.AtLeastOneNotNull;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@AtLeastOneNotNull
 public class UpdateServiceRequest {
 
     @Size(max = 255, message = "El nombre no puede exceder 255 caracteres")

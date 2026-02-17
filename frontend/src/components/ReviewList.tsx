@@ -46,6 +46,7 @@ function ReviewCard({ review }: { review: Review }) {
                 width={40}
                 height={40}
                 className="review-avatar-img"
+                loading="lazy"
                 style={{ objectFit: "cover", borderRadius: "50%" }}
               />
             ) : (

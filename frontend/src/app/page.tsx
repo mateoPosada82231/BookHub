@@ -17,6 +17,7 @@ import type {
   BusinessCategory,
   CategoryOption,
 } from "@/types";
+import type { FilterOptions } from "@/components/FilterPanel";
 import "@/styles/home.css";
 
 function HomePageContent() {
@@ -38,6 +39,13 @@ function HomePageContent() {
   // Paginación
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+
+  // Filtros avanzados
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [filters, setFilters] = useState<FilterOptions>({
+    sortBy: "rating",
+    minRating: 0,
+  });
 
   // Cargar categorías y favoritos al montar
   useEffect(() => {
@@ -70,6 +78,8 @@ function HomePageContent() {
             ? (selectedCategory as BusinessCategory)
             : undefined,
         city: locationQuery || undefined,
+        sortBy: filters.sortBy !== "rating" ? filters.sortBy : undefined,
+        minRating: filters.minRating > 0 ? filters.minRating : undefined,
         page,
         size: 12,
       });
@@ -83,7 +93,7 @@ function HomePageContent() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, locationQuery, selectedCategory, page]);
+  }, [searchQuery, locationQuery, selectedCategory, filters, page]);
 
   // Cargar negocios al cambiar filtros
   useEffect(() => {
@@ -148,9 +158,17 @@ function HomePageContent() {
     [router],
   );
 
-  const handleFilterClick = useCallback(() => {
-    // TODO: Implementar modal de filtros avanzados
-    console.log("Open filters");
+  const handleFilterToggle = useCallback(() => {
+    setShowFilterPanel((prev) => !prev);
+  }, []);
+
+  const handleFilterClose = useCallback(() => {
+    setShowFilterPanel(false);
+  }, []);
+
+  const handleFilterApply = useCallback((newFilters: FilterOptions) => {
+    setFilters(newFilters);
+    setPage(0);
   }, []);
 
   return (
@@ -216,6 +234,11 @@ function HomePageContent() {
               favorites={favorites}
               onToggleFavorite={handleToggleFavorite}
               onViewDetails={handleViewDetails}
+              showFilterPanel={showFilterPanel}
+              onFilterToggle={handleFilterToggle}
+              filters={filters}
+              onFilterApply={handleFilterApply}
+              onFilterClose={handleFilterClose}
             />
 
             {/* Paginación */}

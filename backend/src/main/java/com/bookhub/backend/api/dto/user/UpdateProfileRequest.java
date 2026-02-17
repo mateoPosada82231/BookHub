@@ -1,5 +1,6 @@
 package com.bookhub.backend.api.dto.user;
 
+import com.bookhub.backend.api.validation.AtLeastOneNotNull;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@AtLeastOneNotNull
 public class UpdateProfileRequest {
 
     @Size(max = 255, message = "El nombre no puede exceder 255 caracteres")

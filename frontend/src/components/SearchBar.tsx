@@ -8,6 +8,7 @@ import {
   faLocationCrosshairs,
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
+import { reverseGeocode } from "@/lib/geocoding";
 
 interface SearchBarProps {
   searchQuery: string;
@@ -49,14 +50,10 @@ function SearchBarComponent({
         try {
           const { latitude, longitude } = position.coords;
 
-          // Por ahora establecemos coordenadas como string
-          // En el futuro, aquí iría la llamada al servicio de geocoding reverso
-          const locationString = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-
-          // TODO: Reemplazar con llamada a API de geocoding reverso
-          // const response = await fetch(`/api/geocode/reverse?lat=${latitude}&lng=${longitude}`);
-          // const data = await response.json();
-          // onLocationChange(data.city || locationString);
+          const result = await reverseGeocode(latitude, longitude);
+          // Usar la ciudad detectada si está disponible, sino coordenadas formateadas
+          const locationString =
+            result.city || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
 
           onLocationChange(locationString);
         } catch (error) {

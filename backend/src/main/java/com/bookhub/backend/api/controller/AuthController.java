@@ -91,8 +91,8 @@ public class AuthController {
         
         var resetLink = authService.initiatePasswordReset(request.getEmail());
         
-        // In dev mode, include the reset link in the response
-        if (resetLink.isPresent()) {
+        // In dev mode, include the reset link in the response (NEVER in production)
+        if (resetLink.isPresent() && authService.isDevMode()) {
             return ResponseEntity.ok(MessageResponse.builder()
                     .message("Modo desarrollo: usa el enlace de abajo para restablecer tu contraseña")
                     .devResetLink(resetLink.get())

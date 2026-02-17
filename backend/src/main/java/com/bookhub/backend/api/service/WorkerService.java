@@ -5,6 +5,7 @@ import com.bookhub.backend.api.exception.BadRequestException;
 import com.bookhub.backend.api.exception.ConflictException;
 import com.bookhub.backend.api.exception.ForbiddenException;
 import com.bookhub.backend.api.exception.ResourceNotFoundException;
+import com.bookhub.backend.config.InputSanitizer;
 import com.bookhub.backend.domain.business.*;
 import com.bookhub.backend.domain.user.User;
 import com.bookhub.backend.domain.user.UserRepository;
@@ -24,6 +25,7 @@ public class WorkerService {
     private final WorkerScheduleRepository workerScheduleRepository;
     private final BusinessRepository businessRepository;
     private final UserRepository userRepository;
+    private final InputSanitizer sanitizer;
 
     private static final String[] DAY_NAMES = {
             "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"
@@ -98,7 +100,7 @@ public class WorkerService {
         Worker worker = Worker.builder()
                 .user(user)
                 .business(business)
-                .position(request.getPosition())
+                .position(sanitizer.sanitize(request.getPosition()))
                 .active(true)
                 .build();
 
@@ -121,7 +123,7 @@ public class WorkerService {
         }
 
         if (request.getPosition() != null) {
-            worker.setPosition(request.getPosition());
+            worker.setPosition(sanitizer.sanitize(request.getPosition()));
         }
         if (request.getActive() != null) {
             worker.setActive(request.getActive());
