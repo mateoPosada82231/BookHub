@@ -8,11 +8,17 @@ import com.bookhub.backend.config.SecurityUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.Duration;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -23,23 +29,32 @@ public class AuthController {
     private final AuthService authService;
     private final RateLimitService rateLimitService;
 
+    @Value("${app.jwt.refresh-expiration-ms}")
+    private long refreshExpirationMs;
+
+    private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
+
     @PostMapping("/register")
     @Operation(summary = "Registrar usuario", description = "Crea una nueva cuenta de usuario")
     public ResponseEntity<AuthResponse> register(
             @Valid @RequestBody RegisterRequest request,
-            HttpServletRequest httpRequest) {
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
         String clientIp = getClientIP(httpRequest);
         if (!rateLimitService.tryConsumeGeneral(clientIp)) {
             throw new RateLimitExceededException();
         }
-        return ResponseEntity.ok(authService.register(request));
+        AuthResponse response = authService.register(request);
+        setRefreshTokenCookie(httpResponse, response.getRefreshToken());
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")
     @Operation(summary = "Iniciar sesión", description = "Autentica un usuario y retorna tokens JWT")
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginRequest request,
-            HttpServletRequest httpRequest) {
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
         String clientIp = getClientIP(httpRequest);
         String rateLimitKey = clientIp + ":" + request.getEmail();
         
@@ -52,22 +67,45 @@ public class AuthController {
         
         // On successful login, reset the rate limit for this key
         rateLimitService.resetLoginLimit(rateLimitKey);
-        
+
+        setRefreshTokenCookie(httpResponse, response.getRefreshToken());
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/refresh")
-    @Operation(summary = "Refrescar token", description = "Genera un nuevo access token usando el refresh token")
+    @Operation(summary = "Refrescar token", description = "Genera un nuevo access token usando el refresh token. Acepta el refresh token desde cookie httpOnly o desde el body.")
     public ResponseEntity<AuthResponse> refreshToken(
-            @Valid @RequestBody RefreshTokenRequest request) {
-        return ResponseEntity.ok(authService.refreshToken(request));
+            @RequestBody(required = false) RefreshTokenRequest request,
+            @CookieValue(name = REFRESH_TOKEN_COOKIE, required = false) String cookieRefreshToken,
+            HttpServletResponse httpResponse) {
+        // Prefer cookie, fallback to body for backward compatibility
+        String refreshToken = cookieRefreshToken;
+        if (refreshToken == null && request != null) {
+            refreshToken = request.getRefreshToken();
+        }
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new com.bookhub.backend.api.exception.UnauthorizedException("Refresh token no proporcionado");
+        }
+
+        RefreshTokenRequest tokenRequest = RefreshTokenRequest.builder()
+                .refreshToken(refreshToken)
+                .build();
+        AuthResponse response = authService.refreshToken(tokenRequest);
+        setRefreshTokenCookie(httpResponse, response.getRefreshToken());
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/logout")
     @Operation(summary = "Cerrar sesión", description = "Invalida los tokens del usuario")
     public ResponseEntity<Void> logout(
-            @AuthenticationPrincipal SecurityUser user) {
-        authService.logout(user.getId());
+            @AuthenticationPrincipal SecurityUser user,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+        String authHeader = httpRequest.getHeader("Authorization");
+        String accessToken = (authHeader != null && authHeader.startsWith("Bearer "))
+                ? authHeader.substring(7) : null;
+        authService.logout(user.getId(), accessToken);
+        clearRefreshTokenCookie(httpResponse);
         return ResponseEntity.ok().build();
     }
 
@@ -138,12 +176,49 @@ public class AuthController {
     }
 
     /**
-     * Get the client IP address, considering proxy headers.
+     * Sets the refresh token as an httpOnly cookie.
+     * SameSite=Lax for CSRF protection, Secure only on HTTPS.
      */
+    private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
+        ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE, refreshToken)
+                .httpOnly(true)
+                .secure(false) // Set to true in production with HTTPS
+                .path("/api/auth")
+                .maxAge(Duration.ofMillis(refreshExpirationMs))
+                .sameSite("Lax")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    /**
+     * Clears the refresh token cookie.
+     */
+    private void clearRefreshTokenCookie(HttpServletResponse response) {
+        ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE, "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/api/auth")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    /**
+     * Get the client IP address, considering proxy headers.
+     * Validates format to prevent X-Forwarded-For spoofing from polluting rate-limit keys.
+     */
+    private static final java.util.regex.Pattern IP_PATTERN = java.util.regex.Pattern.compile(
+            "^[0-9]{1,3}(\\.[0-9]{1,3}){3}$|^[0-9a-fA-F:]+$");
+
     private String getClientIP(HttpServletRequest request) {
         String xfHeader = request.getHeader("X-Forwarded-For");
         if (xfHeader != null && !xfHeader.isEmpty()) {
-            return xfHeader.split(",")[0].trim();
+            String candidate = xfHeader.split(",")[0].trim();
+            // Only use if it looks like a valid IP (max 45 chars for IPv6)
+            if (candidate.length() <= 45 && IP_PATTERN.matcher(candidate).matches()) {
+                return candidate;
+            }
         }
         return request.getRemoteAddr();
     }

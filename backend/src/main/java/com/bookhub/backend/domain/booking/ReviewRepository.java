@@ -39,4 +39,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             WHERE w.business.id = :businessId
             """)
     Page<Review> findByBusinessIdPaged(@Param("businessId") Long businessId, Pageable pageable);
+
+    @Query("SELECT COUNT(r) FROM Review r WHERE r.appointment.client.id = :userId")
+    long countByUserId(@Param("userId") Long userId);
 }

@@ -5,12 +5,14 @@ import com.bookhub.backend.api.exception.BadRequestException;
 import com.bookhub.backend.api.exception.ConflictException;
 import com.bookhub.backend.api.exception.ForbiddenException;
 import com.bookhub.backend.api.exception.ResourceNotFoundException;
+import com.bookhub.backend.api.mapper.WorkerMapper;
 import com.bookhub.backend.config.InputSanitizer;
 import com.bookhub.backend.domain.business.*;
 import com.bookhub.backend.domain.user.User;
 import com.bookhub.backend.domain.user.UserRepository;
 import com.bookhub.backend.domain.user.UserRole;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,7 @@ public class WorkerService {
     private final BusinessRepository businessRepository;
     private final UserRepository userRepository;
     private final InputSanitizer sanitizer;
+    private final WorkerMapper workerMapper;
 
     private static final String[] DAY_NAMES = {
             "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"
@@ -59,16 +62,17 @@ public class WorkerService {
     public List<WorkerResponse> getWorkerProfilesForUser(Long userId) {
         return workerRepository.findByUserId(userId)
                 .stream()
-                .map(this::toResponse)
+                .map(workerMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     /**
      * Add a worker to a business
      */
+    @CacheEvict(value = "business-detail", key = "#businessId")
     @Transactional
     public WorkerResponse addWorker(Long businessId, Long ownerId, CreateWorkerRequest request) {
-        Business business = businessRepository.findById(businessId)
+        Business business = businessRepository.findByIdBasic(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio", businessId));
 
         // Verify ownership
@@ -106,12 +110,13 @@ public class WorkerService {
 
         worker = workerRepository.save(worker);
 
-        return toResponse(worker);
+        return workerMapper.toResponse(worker);
     }
 
     /**
      * Update worker
      */
+    @CacheEvict(value = "business-detail", allEntries = true)
     @Transactional
     public WorkerResponse updateWorker(Long workerId, Long ownerId, UpdateWorkerRequest request) {
         Worker worker = workerRepository.findById(workerId)
@@ -131,17 +136,19 @@ public class WorkerService {
 
         worker = workerRepository.save(worker);
 
-        return toResponse(worker);
+        return workerMapper.toResponse(worker);
     }
 
     /**
      * Remove worker (soft delete)
      */
+    @CacheEvict(value = "business-detail", allEntries = true)
     @Transactional
     public void removeWorker(Long workerId, Long ownerId) {
         Worker worker = workerRepository.findById(workerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Trabajador", workerId));
 
+        // Verify ownership
         if (!worker.getBusiness().getOwner().getId().equals(ownerId)) {
             throw new ForbiddenException("No tienes permiso para eliminar este trabajador");
         }
@@ -153,6 +160,7 @@ public class WorkerService {
     /**
      * Set worker schedule
      */
+    @CacheEvict(value = "business-detail", allEntries = true)
     @Transactional
     public WorkerResponse setWorkerSchedule(Long workerId, Long userId, List<WorkerScheduleRequest> schedules) {
         Worker worker = workerRepository.findById(workerId)
@@ -193,26 +201,8 @@ public class WorkerService {
         return toResponseWithSchedule(worker);
     }
 
-    private WorkerResponse toResponse(Worker worker) {
-        return WorkerResponse.builder()
-                .id(worker.getId())
-                .userId(worker.getUser().getId())
-                .fullName(worker.getUser().getProfile() != null
-                        ? worker.getUser().getProfile().getFullName()
-                        : null)
-                .avatarUrl(worker.getUser().getProfile() != null
-                        ? worker.getUser().getProfile().getAvatarUrl()
-                        : null)
-                .position(worker.getPosition())
-                .active(worker.isActive())
-                .businessId(worker.getBusiness().getId())
-                .businessName(worker.getBusiness().getName())
-                .createdAt(worker.getCreatedAt())
-                .build();
-    }
-
     private WorkerResponse toResponseWithSchedule(Worker worker) {
-        WorkerResponse response = toResponse(worker);
+        WorkerResponse response = workerMapper.toResponse(worker);
 
         // Use already-loaded schedules from @EntityGraph/FETCH JOIN when available
         List<WorkerScheduleResponse> schedules;

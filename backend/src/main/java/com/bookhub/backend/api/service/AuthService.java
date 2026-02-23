@@ -10,6 +10,7 @@ import com.bookhub.backend.api.exception.UnauthorizedException;
 import com.bookhub.backend.config.InputSanitizer;
 import com.bookhub.backend.config.JwtService;
 import com.bookhub.backend.config.SecurityUser;
+import com.bookhub.backend.config.TokenBlacklistService;
 import com.bookhub.backend.domain.user.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
     private final InputSanitizer sanitizer;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Value("${app.jwt.refresh-expiration-ms}")
     private long refreshExpirationMs;
@@ -60,13 +62,20 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+
+        // Only CLIENT and OWNER can self-register; WORKER is assigned by an OWNER
+        if (request.getRole() != UserRole.CLIENT && request.getRole() != UserRole.OWNER) {
+            throw new BadRequestException("Solo se permite registrarse como CLIENT u OWNER");
+        }
+
+        if (userRepository.existsByEmail(normalizedEmail)) {
             throw new BadRequestException("El email ya está registrado");
         }
 
         // Create User
         var user = User.builder()
-                .email(request.getEmail())
+                .email(normalizedEmail)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
                 .enabled(true)
@@ -104,12 +113,14 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
+                        normalizedEmail,
                         request.getPassword()));
 
-        var user = userRepository.findByEmail(request.getEmail())
+        var user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new UnauthorizedException("Usuario no encontrado"));
 
         // Delete old refresh tokens for this user
@@ -165,8 +176,11 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(Long userId) {
+    public void logout(Long userId, String accessToken) {
         refreshTokenRepository.deleteByUserId(userId);
+        if (accessToken != null) {
+            tokenBlacklistService.blacklist(accessToken);
+        }
     }
 
     /**
@@ -178,7 +192,8 @@ public class AuthService {
      */
     @Transactional
     public Optional<String> initiatePasswordReset(String email) {
-        Optional<User> userOpt = userRepository.findByEmail(email);
+        String normalizedEmail = email.trim().toLowerCase();
+        Optional<User> userOpt = userRepository.findByEmail(normalizedEmail);
         
         if (userOpt.isEmpty()) {
             // Silent fail if user not found (security best practice)

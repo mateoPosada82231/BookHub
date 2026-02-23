@@ -64,6 +64,18 @@ public class BusinessController {
     }
 
     /**
+     * Get business statistics (owner only)
+     */
+    @GetMapping("/{id}/stats")
+    @PreAuthorize("hasRole('OWNER')")
+    @Operation(summary = "Estadísticas del negocio", description = "Retorna citas, ingresos y reseñas del negocio")
+    public ResponseEntity<BusinessStatsResponse> getBusinessStats(
+            @PathVariable Long id,
+            @AuthenticationPrincipal SecurityUser user) {
+        return ResponseEntity.ok(businessService.getBusinessStats(id, user.getId()));
+    }
+
+    /**
      * Create a new business
      */
     @PostMapping

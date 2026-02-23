@@ -4,6 +4,7 @@ import { BaseApiClient, API_BASE_URL } from "./base";
 import {
   BusinessSummary,
   Business,
+  BusinessStats,
   PageResponse,
   CategoryOption,
   CreateBusinessRequest,
@@ -66,6 +67,10 @@ class BusinessApiClient extends BaseApiClient {
 
   async getCategories(): Promise<CategoryOption[]> {
     return this.request<CategoryOption[]>("/api/businesses/categories");
+  }
+
+  async getStats(businessId: number): Promise<BusinessStats> {
+    return this.request<BusinessStats>(`/api/businesses/${businessId}/stats`);
   }
 }
 

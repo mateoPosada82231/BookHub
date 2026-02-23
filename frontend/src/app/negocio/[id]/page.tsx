@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -186,6 +186,9 @@ function NegocioContent() {
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsPage, setReviewsPage] = useState(0);
+  const [reviewsHasMore, setReviewsHasMore] = useState(false);
+  const [reviewsTotal, setReviewsTotal] = useState(0);
 
   // Booking state
   const [step, setStep] = useState<BookingStep>("service");
@@ -232,23 +235,37 @@ function NegocioContent() {
   }, [businessId]);
 
   // Load reviews
-  useEffect(() => {
-    const loadReviews = async () => {
+  const REVIEWS_PAGE_SIZE = 10;
+
+  const loadReviews = useCallback(
+    async (page: number, append: boolean = false) => {
       try {
         setReviewsLoading(true);
-        const reviewsData = await api.getBusinessReviews(businessId, 0, 50);
-        setReviews(reviewsData.content);
+        const reviewsData = await api.getBusinessReviews(
+          businessId,
+          page,
+          REVIEWS_PAGE_SIZE,
+        );
+        setReviews((prev) =>
+          append ? [...prev, ...reviewsData.content] : reviewsData.content,
+        );
+        setReviewsPage(page);
+        setReviewsHasMore(page + 1 < reviewsData.total_pages);
+        setReviewsTotal(reviewsData.total_elements);
       } catch (err) {
         console.error("Error loading reviews:", err);
       } finally {
         setReviewsLoading(false);
       }
-    };
+    },
+    [businessId],
+  );
 
+  useEffect(() => {
     if (businessId) {
-      loadReviews();
+      loadReviews(0);
     }
-  }, [businessId]);
+  }, [businessId, loadReviews]);
 
   // Load worker availability when worker, date or service changes
   useEffect(() => {
@@ -473,7 +490,9 @@ function NegocioContent() {
               )}
             </div>
             <div className="business-hero-info">
-              <span className="business-category">{business.category}</span>
+              <span className="business-category">
+                {business.category_display || business.category}
+              </span>
               <h1 className="business-name">{business.name}</h1>
               <div className="business-meta">
                 <span className="business-rating">
@@ -878,6 +897,19 @@ function NegocioContent() {
               />
             </div>
             <ReviewList reviews={reviews} loading={reviewsLoading} />
+            {reviewsHasMore && (
+              <div style={{ textAlign: "center", marginTop: "1rem" }}>
+                <button
+                  className="btn-secondary"
+                  onClick={() => loadReviews(reviewsPage + 1, true)}
+                  disabled={reviewsLoading}
+                >
+                  {reviewsLoading
+                    ? "Cargando..."
+                    : `Cargar más reseñas (${reviews.length} de ${reviewsTotal})`}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </main>

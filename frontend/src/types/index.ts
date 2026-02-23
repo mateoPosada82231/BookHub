@@ -13,6 +13,12 @@ export interface User {
   phone?: string;
 }
 
+export interface UserStats {
+  total_appointments: number;
+  total_favorites: number;
+  total_reviews: number;
+}
+
 export type BusinessCategory =
   | "BARBERSHOP"
   | "HAIR_SALON"
@@ -46,6 +52,18 @@ export interface BusinessSummary {
   average_rating?: number;
   total_reviews: number;
   services_count: number;
+}
+
+// Business statistics
+export interface BusinessStats {
+  appointments_today: number;
+  appointments_this_week: number;
+  appointments_this_month: number;
+  revenue_this_week: number;
+  revenue_this_month: number;
+  total_reviews: number;
+  average_rating?: number;
+  status_counts: Record<string, number>;
 }
 
 // Full Business (for detail view)

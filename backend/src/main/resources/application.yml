@@ -4,9 +4,9 @@ spring:
 
   # Database Configuration
   datasource:
-    url: jdbc:postgresql://localhost:5432/bookhub
-    username: postgres
-    password: admin
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/bookhub}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:admin}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -101,18 +101,18 @@ app:
 logging:
   level:
     root: INFO
-    com.bookhub: DEBUG
-    org.springframework.security: DEBUG
+    com.bookhub: INFO
+    org.springframework.security: WARN
     org.flywaydb: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
 
 # Actuator & Monitoring
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info
   endpoint:
     health:
       show-details: when-authorized
@@ -152,3 +152,24 @@ logging:
     root: WARN
     com.bookhub: INFO
     org.hibernate.SQL: WARN
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+logging:
+  level:
+    root: INFO
+    com.bookhub: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

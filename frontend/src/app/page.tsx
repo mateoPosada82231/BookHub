@@ -117,8 +117,8 @@ function HomePageContent() {
 
   const handleSearch = useCallback(() => {
     setPage(0);
-    loadBusinesses();
-  }, [loadBusinesses]);
+    // loadBusinesses will be triggered by the useEffect debounce when page/filters change
+  }, []);
 
   const handleCategoryChange = useCallback((categoryId: string) => {
     setSelectedCategory(categoryId);

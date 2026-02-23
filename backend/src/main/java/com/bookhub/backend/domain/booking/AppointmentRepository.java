@@ -83,8 +83,20 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     /**
      * Count appointments by status for a business (for statistics)
      */
-    @Query("SELECT a.status, COUNT(a) FROM Appointment a WHERE a.worker.business.id = :businessId GROUP BY a.status")
-    List<Object[]> countByStatusForBusiness(@Param("businessId") Long businessId);
+    @Query("SELECT a.status AS status, COUNT(a) AS count FROM Appointment a WHERE a.worker.business.id = :businessId GROUP BY a.status")
+    List<StatusCountProjection> countByStatusForBusiness(@Param("businessId") Long businessId);
+
+    /**
+     * Count appointments for a business in a date range
+     */
+    @Query("SELECT COUNT(a) FROM Appointment a WHERE a.worker.business.id = :businessId AND a.startTime >= :start AND a.startTime < :end AND a.status <> 'CANCELLED'")
+    long countByBusinessAndDateRange(@Param("businessId") Long businessId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /**
+     * Sum service prices for completed appointments in a date range (revenue)
+     */
+    @Query("SELECT COALESCE(SUM(a.service.price), 0) FROM Appointment a WHERE a.worker.business.id = :businessId AND a.startTime >= :start AND a.startTime < :end AND a.status = 'COMPLETED'")
+    java.math.BigDecimal sumRevenueByBusinessAndDateRange(@Param("businessId") Long businessId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     /**
      * Find appointments for a worker within a date range
@@ -98,6 +110,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     /**
      * Calculate average rating for a business using DB aggregation instead of loading all reviews in Java
      */
-    @Query("SELECT AVG(r.rating), COUNT(r) FROM Review r JOIN r.appointment a JOIN a.worker w WHERE w.business.id = :businessId")
-    Object[] calculateBusinessRatingStats(@Param("businessId") Long businessId);
+    @Query("SELECT AVG(r.rating) AS averageRating, COUNT(r) AS totalReviews FROM Review r JOIN r.appointment a JOIN a.worker w WHERE w.business.id = :businessId")
+    RatingStatsProjection calculateBusinessRatingStats(@Param("businessId") Long businessId);
+
+    long countByClientId(Long clientId);
 }

@@ -52,10 +52,10 @@ class AuthApiClient extends BaseApiClient {
     });
   }
 
-  async refreshToken(refreshToken: string): Promise<AuthResponse> {
+  async refreshToken(): Promise<AuthResponse> {
+    // Refresh token is sent automatically via httpOnly cookie
     return this.request<AuthResponse>("/api/auth/refresh", {
       method: "POST",
-      body: JSON.stringify({ refreshToken }),
     });
   }
 
@@ -73,7 +73,9 @@ class AuthApiClient extends BaseApiClient {
   }
 
   async validateResetToken(token: string): Promise<MessageResponse> {
-    return this.request<MessageResponse>(`/api/auth/validate-reset-token?token=${encodeURIComponent(token)}`);
+    return this.request<MessageResponse>(
+      `/api/auth/validate-reset-token?token=${encodeURIComponent(token)}`,
+    );
   }
 
   async resetPassword(data: ResetPasswordRequest): Promise<MessageResponse> {

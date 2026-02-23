@@ -6,8 +6,7 @@ import Link from "next/link";
 import { PublicOnlyRoute } from "@/components/ProtectedRoute";
 import { notify } from "@/components/ui/toast";
 import "@/styles/auth.css";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8082";
+import { API_BASE_URL } from "@/lib/api/base";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -33,7 +32,7 @@ function ResetPasswordForm() {
 
       try {
         const response = await fetch(
-          `${API_BASE_URL}/api/auth/validate-reset-token?token=${encodeURIComponent(token)}`
+          `${API_BASE_URL}/api/auth/validate-reset-token?token=${encodeURIComponent(token)}`,
         );
 
         if (response.ok) {
@@ -93,7 +92,8 @@ function ResetPasswordForm() {
         }, 3000);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.message || "Error al actualizar la contraseña";
+        const errorMessage =
+          errorData.message || "Error al actualizar la contraseña";
         setError(errorMessage);
         notify.error(errorMessage);
       }
@@ -117,7 +117,9 @@ function ResetPasswordForm() {
             <div className="spinner-border text-primary" role="status">
               <span className="visually-hidden">Validando...</span>
             </div>
-            <p className="mt-3 text-neutral-400">Validando enlace de recuperación...</p>
+            <p className="mt-3 text-neutral-400">
+              Validando enlace de recuperación...
+            </p>
           </div>
         </div>
       </div>
@@ -237,11 +239,13 @@ function ResetPasswordForm() {
 
 function ResetPasswordContent() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#050d0c] flex items-center justify-center">
-        <div className="text-white">Cargando...</div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#050d0c] flex items-center justify-center">
+          <div className="text-white">Cargando...</div>
+        </div>
+      }
+    >
       <ResetPasswordForm />
     </Suspense>
   );

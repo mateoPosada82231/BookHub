@@ -6,12 +6,11 @@ import Link from "next/link";
 import { PublicOnlyRoute } from "@/components/ProtectedRoute";
 import { notify } from "@/components/ui/toast";
 import "@/styles/auth.css";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8082";
+import { API_BASE_URL } from "@/lib/api/base";
 
 function RecoverPasswordContent() {
   const router = useRouter();
-  
+
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -36,14 +35,17 @@ function RecoverPasswordContent() {
 
       if (response.ok) {
         const data = await response.json();
-        
+
         // Check if we're in dev mode and got a reset link
         if (data.devResetLink) {
           setDevResetLink(data.devResetLink);
-          setSuccess("Modo desarrollo: usa el enlace de abajo para restablecer tu contraseña");
+          setSuccess(
+            "Modo desarrollo: usa el enlace de abajo para restablecer tu contraseña",
+          );
           notify.success("Enlace de recuperación generado");
         } else {
-          const successMessage = "Se ha enviado un enlace de recuperación a tu correo electrónico";
+          const successMessage =
+            "Se ha enviado un enlace de recuperación a tu correo electrónico";
           setSuccess(successMessage);
           notify.success(successMessage);
           setTimeout(() => {
@@ -51,12 +53,14 @@ function RecoverPasswordContent() {
           }, 3000);
         }
       } else if (response.status === 429) {
-        const errorMessage = "Demasiadas solicitudes. Por favor, espera un momento.";
+        const errorMessage =
+          "Demasiadas solicitudes. Por favor, espera un momento.";
         setError(errorMessage);
         notify.error(errorMessage);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.message || "Error al procesar la solicitud";
+        const errorMessage =
+          errorData.message || "Error al procesar la solicitud";
         setError(errorMessage);
         notify.error(errorMessage);
       }

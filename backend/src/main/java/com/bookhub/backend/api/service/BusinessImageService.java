@@ -38,7 +38,7 @@ public class BusinessImageService {
      */
     @Transactional
     public BusinessImageResponse addImage(Long businessId, Long userId, AddBusinessImageRequest request) {
-        Business business = businessRepository.findById(businessId)
+        Business business = businessRepository.findByIdBasic(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio", businessId));
 
         // Verify ownership
@@ -67,7 +67,7 @@ public class BusinessImageService {
      */
     @Transactional
     public void removeImage(Long businessId, Long imageId, Long userId) {
-        Business business = businessRepository.findById(businessId)
+        Business business = businessRepository.findByIdBasic(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio", businessId));
 
         // Verify ownership

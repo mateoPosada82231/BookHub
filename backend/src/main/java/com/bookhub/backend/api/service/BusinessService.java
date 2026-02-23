@@ -4,8 +4,12 @@ import com.bookhub.backend.api.dto.business.*;
 import com.bookhub.backend.api.dto.common.PageResponse;
 import com.bookhub.backend.api.exception.ForbiddenException;
 import com.bookhub.backend.api.exception.ResourceNotFoundException;
+import com.bookhub.backend.api.mapper.ServiceMapper;
+import com.bookhub.backend.api.mapper.WorkerMapper;
 import com.bookhub.backend.config.InputSanitizer;
 import com.bookhub.backend.domain.business.*;
+import com.bookhub.backend.domain.booking.AppointmentRepository;
+import com.bookhub.backend.domain.booking.StatusCountProjection;
 import com.bookhub.backend.domain.user.User;
 import com.bookhub.backend.domain.user.UserRepository;
 import com.bookhub.backend.domain.user.UserRole;
@@ -19,7 +23,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.TemporalAdjusters;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,7 +41,10 @@ public class BusinessService {
     private final UserRepository userRepository;
     private final ServiceRepository serviceRepository;
     private final WorkerRepository workerRepository;
+    private final AppointmentRepository appointmentRepository;
     private final InputSanitizer sanitizer;
+    private final ServiceMapper serviceMapper;
+    private final WorkerMapper workerMapper;
 
     /**
      * Search businesses with filters and pagination
@@ -45,11 +59,25 @@ public class BusinessService {
             int page,
             int size) {
 
+        // Limit page size to prevent abuse
+        int safeSize = Math.min(size, 50);
+
         Sort sort = resolveSort(sortBy);
-        Pageable pageable = PageRequest.of(page, size, sort);
+        Pageable pageable = PageRequest.of(page, safeSize, sort);
         Page<Business> businesses;
 
-        if (query != null && !query.isBlank() && category != null) {
+        if (city != null && !city.isBlank()) {
+            // City filter using existing repository method
+            if (query != null && !query.isBlank() && category != null) {
+                businesses = businessRepository.searchByNameAndCategoryAndCity(query, category, city, pageable);
+            } else if (query != null && !query.isBlank()) {
+                businesses = businessRepository.searchByNameAndCity(query, city, pageable);
+            } else if (category != null) {
+                businesses = businessRepository.findByCategoryAndCityAndActiveTrue(category, city, pageable);
+            } else {
+                businesses = businessRepository.findByCityAndActiveTrue(city, pageable);
+            }
+        } else if (query != null && !query.isBlank() && category != null) {
             businesses = businessRepository.searchByNameAndCategory(query, category, pageable);
         } else if (query != null && !query.isBlank()) {
             businesses = businessRepository.searchByName(query, pageable);
@@ -59,20 +87,28 @@ public class BusinessService {
             businesses = businessRepository.findByActiveTrue(pageable);
         }
 
+        // Filter by minRating in-memory (safe null check to prevent NPE)
         List<BusinessSummaryResponse> content = businesses.getContent().stream()
-                .filter(b -> minRating == null || b.getAverageRating().doubleValue() >= minRating)
+                .filter(b -> minRating == null
+                        || (b.getAverageRating() != null && b.getAverageRating().doubleValue() >= minRating))
                 .map(this::toSummaryResponse)
                 .collect(Collectors.toList());
 
+        // Adjust totalElements if minRating filter was applied (post-pagination filtering)
+        long totalElements = minRating != null ? content.size() : businesses.getTotalElements();
+        int totalPages = minRating != null
+                ? (int) Math.ceil((double) totalElements / safeSize)
+                : businesses.getTotalPages();
+
         return PageResponse.<BusinessSummaryResponse>builder()
                 .content(content)
-                .totalElements(businesses.getTotalElements())
-                .totalPages(businesses.getTotalPages())
+                .totalElements(totalElements)
+                .totalPages(totalPages)
                 .currentPage(businesses.getNumber())
                 .pageSize(businesses.getSize())
                 .first(businesses.isFirst())
                 .last(businesses.isLast())
-                .empty(businesses.isEmpty())
+                .empty(content.isEmpty())
                 .build();
     }
 
@@ -192,7 +228,7 @@ public class BusinessService {
     @CacheEvict(value = "business-detail", key = "#businessId")
     @Transactional
     public void deleteBusiness(Long businessId, Long userId) {
-        Business business = businessRepository.findById(businessId)
+        Business business = businessRepository.findByIdBasic(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio", businessId));
 
         if (!business.getOwner().getId().equals(userId)) {
@@ -201,6 +237,53 @@ public class BusinessService {
 
         business.setActive(false);
         businessRepository.save(business);
+    }
+
+    /**
+     * Get statistics for a business (appointments, revenue, reviews)
+     */
+    @Transactional(readOnly = true)
+    public BusinessStatsResponse getBusinessStats(Long businessId, Long ownerId) {
+        Business business = businessRepository.findByIdBasic(businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio", businessId));
+
+        if (!business.getOwner().getId().equals(ownerId)) {
+            throw new ForbiddenException("No tienes permiso para ver las estadísticas de este negocio");
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+
+        LocalDateTime startOfWeek = today.with(java.time.DayOfWeek.MONDAY).atStartOfDay();
+        LocalDateTime endOfWeek = startOfWeek.plusDays(7);
+
+        LocalDateTime startOfMonth = today.with(TemporalAdjusters.firstDayOfMonth()).atStartOfDay();
+        LocalDateTime endOfMonth = today.with(TemporalAdjusters.firstDayOfNextMonth()).atStartOfDay();
+
+        long appointmentsToday = appointmentRepository.countByBusinessAndDateRange(businessId, startOfDay, endOfDay);
+        long appointmentsThisWeek = appointmentRepository.countByBusinessAndDateRange(businessId, startOfWeek, endOfWeek);
+        long appointmentsThisMonth = appointmentRepository.countByBusinessAndDateRange(businessId, startOfMonth, endOfMonth);
+
+        BigDecimal revenueThisWeek = appointmentRepository.sumRevenueByBusinessAndDateRange(businessId, startOfWeek, endOfWeek);
+        BigDecimal revenueThisMonth = appointmentRepository.sumRevenueByBusinessAndDateRange(businessId, startOfMonth, endOfMonth);
+
+        // Status counts
+        Map<String, Long> statusCounts = new HashMap<>();
+        for (StatusCountProjection row : appointmentRepository.countByStatusForBusiness(businessId)) {
+            statusCounts.put(row.getStatus(), row.getCount());
+        }
+
+        return BusinessStatsResponse.builder()
+                .appointmentsToday(appointmentsToday)
+                .appointmentsThisWeek(appointmentsThisWeek)
+                .appointmentsThisMonth(appointmentsThisMonth)
+                .revenueThisWeek(revenueThisWeek)
+                .revenueThisMonth(revenueThisMonth)
+                .totalReviews(business.getTotalReviews())
+                .averageRating(business.getAverageRating())
+                .statusCounts(statusCounts)
+                .build();
     }
 
     // ========== MAPPER METHODS ==========
@@ -225,7 +308,7 @@ public class BusinessService {
         List<ServiceResponse> services = business.getServices() != null
                 ? business.getServices().stream()
                         .filter(com.bookhub.backend.domain.business.Service::isActive)
-                        .map(this::toServiceResponse)
+                        .map(serviceMapper::toResponse)
                         .collect(Collectors.toList())
                 : List.of();
 
@@ -235,7 +318,7 @@ public class BusinessService {
         if (business.getWorkers() != null && !business.getWorkers().isEmpty()) {
             workers = workerRepository.findByBusinessIdWithProfile(business.getId())
                     .stream()
-                    .map(this::toWorkerResponse)
+                    .map(workerMapper::toResponse)
                     .collect(Collectors.toList());
         } else {
             workers = List.of();
@@ -273,36 +356,6 @@ public class BusinessService {
                 .build();
     }
 
-    private ServiceResponse toServiceResponse(com.bookhub.backend.domain.business.Service service) {
-        return ServiceResponse.builder()
-                .id(service.getId())
-                .name(service.getName())
-                .description(service.getDescription())
-                .durationMinutes(service.getDurationMinutes())
-                .price(service.getPrice())
-                .imageUrl(service.getImageUrl())
-                .active(service.isActive())
-                .businessId(service.getBusiness().getId())
-                .businessName(service.getBusiness().getName())
-                .build();
-    }
 
-    private WorkerResponse toWorkerResponse(Worker worker) {
-        return WorkerResponse.builder()
-                .id(worker.getId())
-                .userId(worker.getUser().getId())
-                .fullName(worker.getUser().getProfile() != null
-                        ? worker.getUser().getProfile().getFullName()
-                        : null)
-                .avatarUrl(worker.getUser().getProfile() != null
-                        ? worker.getUser().getProfile().getAvatarUrl()
-                        : null)
-                .position(worker.getPosition())
-                .active(worker.isActive())
-                .businessId(worker.getBusiness().getId())
-                .businessName(worker.getBusiness().getName())
-                .createdAt(worker.getCreatedAt())
-                .build();
-    }
 }
 

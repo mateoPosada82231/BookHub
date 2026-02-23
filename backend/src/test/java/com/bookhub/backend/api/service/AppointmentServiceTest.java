@@ -4,6 +4,7 @@ import com.bookhub.backend.api.dto.appointment.AppointmentResponse;
 import com.bookhub.backend.api.dto.appointment.CreateAppointmentRequest;
 import com.bookhub.backend.api.exception.BadRequestException;
 import com.bookhub.backend.api.exception.ConflictException;
+import com.bookhub.backend.config.InputSanitizer;
 import com.bookhub.backend.domain.booking.Appointment;
 import com.bookhub.backend.domain.booking.AppointmentRepository;
 import com.bookhub.backend.domain.booking.AppointmentStatus;
@@ -55,6 +56,12 @@ class AppointmentServiceTest {
 
     @Mock
     private BusinessRepository businessRepository;
+
+    @Mock
+    private InputSanitizer sanitizer;
+
+    @Mock
+    private EmailService emailService;
 
     @InjectMocks
     private AppointmentService appointmentService;

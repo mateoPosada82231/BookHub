@@ -125,13 +125,6 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- MapStruct for DTO mapping -->
-		<dependency>
-			<groupId>org.mapstruct</groupId>
-			<artifactId>mapstruct</artifactId>
-			<version>1.6.3</version>
-		</dependency>
-
 		<!-- Bucket4j for Rate Limiting -->
 		<dependency>
 			<groupId>com.bucket4j</groupId>

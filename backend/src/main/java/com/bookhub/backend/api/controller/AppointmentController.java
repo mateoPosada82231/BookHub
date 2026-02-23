@@ -128,6 +128,19 @@ public class AppointmentController {
     }
 
     /**
+     * Reschedule appointment to a new time
+     */
+    @PostMapping("/{id}/reschedule")
+    @Operation(summary = "Reagendar cita", description = "Cambia la fecha/hora de una cita pendiente o confirmada")
+    public ResponseEntity<AppointmentResponse> rescheduleAppointment(
+            @PathVariable Long id,
+            @AuthenticationPrincipal SecurityUser user,
+            @Valid @RequestBody RescheduleAppointmentRequest request) {
+
+        return ResponseEntity.ok(appointmentService.rescheduleAppointment(id, user.getId(), request));
+    }
+
+    /**
      * Add review to appointment
      */
     @PostMapping("/{id}/review")

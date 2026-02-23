@@ -4,6 +4,9 @@ import com.bookhub.backend.api.dto.user.*;
 import com.bookhub.backend.api.exception.BadRequestException;
 import com.bookhub.backend.api.exception.ResourceNotFoundException;
 import com.bookhub.backend.config.InputSanitizer;
+import com.bookhub.backend.domain.booking.AppointmentRepository;
+import com.bookhub.backend.domain.booking.ReviewRepository;
+import com.bookhub.backend.domain.user.FavoriteRepository;
 import com.bookhub.backend.domain.user.Profile;
 import com.bookhub.backend.domain.user.User;
 import com.bookhub.backend.domain.user.UserRepository;
@@ -19,6 +22,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final InputSanitizer sanitizer;
+    private final FavoriteRepository favoriteRepository;
+    private final ReviewRepository reviewRepository;
+    private final AppointmentRepository appointmentRepository;
 
     /**
      * Get user profile by ID
@@ -99,6 +105,18 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario con email " + email + " no encontrado"));
         return toResponse(user);
+    }
+
+    /**
+     * Get user statistics (appointments, favorites, reviews)
+     */
+    @Transactional(readOnly = true)
+    public UserStatsResponse getUserStats(Long userId) {
+        return UserStatsResponse.builder()
+                .totalAppointments(appointmentRepository.countByClientId(userId))
+                .totalFavorites(favoriteRepository.countByUserId(userId))
+                .totalReviews(reviewRepository.countByUserId(userId))
+                .build();
     }
 
     private UserResponse toResponse(User user) {

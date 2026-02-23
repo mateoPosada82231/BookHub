@@ -14,6 +14,15 @@ const publicPaths = [
 // Rutas que redirigen al home si el usuario YA está autenticado
 const authOnlyPaths = ["/login", "/registro", "/recuperar-password"];
 
+// Rutas protegidas que requieren autenticación
+const protectedPaths = [
+  "/perfil",
+  "/mis-citas",
+  "/mi-agenda",
+  "/mi-negocio",
+  "/favoritos",
+];
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -28,6 +37,20 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Check for access token in cookies (middleware can't read localStorage)
+  const accessToken = request.cookies.get("accessToken")?.value;
+  const hasToken = !!accessToken;
+
+  // Si el usuario está autenticado y visita rutas de auth-only, redirigir al home
+  if (hasToken) {
+    const isAuthOnlyPath = authOnlyPaths.some(
+      (path) => pathname === path || pathname.startsWith(path + "/"),
+    );
+    if (isAuthOnlyPath) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+  }
+
   // Verificar si es una ruta pública
   const isPublicPath = publicPaths.some(
     (path) => pathname === path || pathname.startsWith(path + "/"),
@@ -38,8 +61,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Para rutas protegidas, la verificación real la hace el componente ProtectedRoute
-  // El middleware permite el paso pero el cliente verificará la autenticación
+  // Para rutas protegidas, la verificación final la hace ProtectedRoute en el cliente
+  // (ya que el middleware no tiene acceso a localStorage donde se guardan los tokens)
   return NextResponse.next();
 }
 

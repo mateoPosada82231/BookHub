@@ -15,6 +15,7 @@ import com.bookhub.backend.domain.user.Profile;
 import com.bookhub.backend.domain.user.User;
 import com.bookhub.backend.domain.user.UserRepository;
 import com.bookhub.backend.domain.user.UserRole;
+import com.bookhub.backend.config.InputSanitizer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -50,6 +52,18 @@ class BusinessServiceTest {
     @Mock
     private WorkerRepository workerRepository;
 
+    @Mock
+    private com.bookhub.backend.domain.booking.AppointmentRepository appointmentRepository;
+
+    @Mock
+    private InputSanitizer sanitizer;
+
+    @Mock
+    private com.bookhub.backend.api.mapper.ServiceMapper serviceMapper;
+
+    @Mock
+    private com.bookhub.backend.api.mapper.WorkerMapper workerMapper;
+
     @InjectMocks
     private BusinessService businessService;
 
@@ -58,6 +72,10 @@ class BusinessServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Default sanitizer behavior: return the same input
+        lenient().when(sanitizer.sanitize(anyString())).thenAnswer(i -> i.getArgument(0));
+        lenient().when(sanitizer.sanitizeUrl(anyString())).thenAnswer(i -> i.getArgument(0));
+
         owner = User.builder()
                 .id(1L)
                 .email("owner@test.com")
@@ -90,7 +108,7 @@ class BusinessServiceTest {
         when(businessRepository.findByActiveTrue(any(Pageable.class))).thenReturn(businessPage);
 
         // When
-        PageResponse<BusinessSummaryResponse> result = businessService.searchBusinesses(null, null, null, 0, 10);
+        PageResponse<BusinessSummaryResponse> result = businessService.searchBusinesses(null, null, null, null, null, 0, 10);
 
         // Then
         assertThat(result.getContent()).hasSize(1);
@@ -103,8 +121,8 @@ class BusinessServiceTest {
     void getBusinessById_shouldReturnBusiness() {
         // Given
         when(businessRepository.findById(1L)).thenReturn(Optional.of(business));
-        when(serviceRepository.findByBusinessIdAndActiveTrue(1L)).thenReturn(List.of());
-        when(workerRepository.findByBusinessIdWithProfile(1L)).thenReturn(List.of());
+        lenient().when(serviceRepository.findByBusinessIdAndActiveTrue(1L)).thenReturn(List.of());
+        lenient().when(workerRepository.findByBusinessIdWithProfile(1L)).thenReturn(List.of());
 
         // When
         BusinessResponse result = businessService.getBusinessById(1L);
@@ -142,8 +160,8 @@ class BusinessServiceTest {
             b.setId(2L);
             return b;
         });
-        when(serviceRepository.findByBusinessIdAndActiveTrue(any())).thenReturn(List.of());
-        when(workerRepository.findByBusinessIdWithProfile(any())).thenReturn(List.of());
+        lenient().when(serviceRepository.findByBusinessIdAndActiveTrue(any())).thenReturn(List.of());
+        lenient().when(workerRepository.findByBusinessIdWithProfile(any())).thenReturn(List.of());
 
         // When
         BusinessResponse result = businessService.createBusiness(1L, request);
@@ -179,8 +197,7 @@ class BusinessServiceTest {
     @DisplayName("Debe eliminar negocio (soft delete)")
     void deleteBusiness_shouldSoftDelete() {
         // Given
-        when(businessRepository.findById(1L)).thenReturn(Optional.of(business));
-        when(businessRepository.save(any(Business.class))).thenReturn(business);
+        when(businessRepository.findByIdBasic(1L)).thenReturn(Optional.of(business));
 
         // When
         businessService.deleteBusiness(1L, 1L);

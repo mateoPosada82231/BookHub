@@ -46,10 +46,16 @@ public interface BusinessRepository extends JpaRepository<Business, Long> {
             Pageable pageable);
 
     /**
-     * Find business by ID with all relationships eagerly loaded.
+     * Find business by ID with all relationships eagerly loaded (for detail view).
      */
     @EntityGraph(attributePaths = {"owner", "services", "workers", "galleryImages"})
     Optional<Business> findById(Long id);
+
+    /**
+     * Find business by ID without eager loading (lightweight, for ownership checks and updates).
+     */
+    @Query("SELECT b FROM Business b WHERE b.id = :id")
+    Optional<Business> findByIdBasic(@Param("id") Long id);
 
     /**
      * Find businesses by owner
@@ -62,4 +68,25 @@ public interface BusinessRepository extends JpaRepository<Business, Long> {
      */
     @EntityGraph(attributePaths = {"services"})
     Page<Business> findByCityAndActiveTrue(String city, Pageable pageable);
+
+    /**
+     * Search businesses by name and city
+     */
+    @EntityGraph(attributePaths = {"services"})
+    @Query("SELECT b FROM Business b WHERE b.active = true AND LOWER(b.city) = LOWER(:city) AND LOWER(b.name) LIKE LOWER(CONCAT('%', :query, '%'))")
+    Page<Business> searchByNameAndCity(@Param("query") String query, @Param("city") String city, Pageable pageable);
+
+    /**
+     * Search businesses by name, category and city
+     */
+    @EntityGraph(attributePaths = {"services"})
+    @Query("SELECT b FROM Business b WHERE b.active = true AND b.category = :category AND LOWER(b.city) = LOWER(:city) AND LOWER(b.name) LIKE LOWER(CONCAT('%', :query, '%'))")
+    Page<Business> searchByNameAndCategoryAndCity(@Param("query") String query, @Param("category") BusinessCategory category, @Param("city") String city, Pageable pageable);
+
+    /**
+     * Find businesses by category and city
+     */
+    @EntityGraph(attributePaths = {"services"})
+    @Query("SELECT b FROM Business b WHERE b.active = true AND b.category = :category AND LOWER(b.city) = LOWER(:city)")
+    Page<Business> findByCategoryAndCityAndActiveTrue(@Param("category") BusinessCategory category, @Param("city") String city, Pageable pageable);
 }

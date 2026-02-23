@@ -41,6 +41,23 @@ export function ServiceForm({
     setLoading(true);
     setError(null);
 
+    // Validations
+    if (formData.name.trim().length < 2) {
+      setError("El nombre debe tener al menos 2 caracteres");
+      setLoading(false);
+      return;
+    }
+    if (formData.duration_minutes < 5 || formData.duration_minutes > 480) {
+      setError("La duración debe estar entre 5 y 480 minutos");
+      setLoading(false);
+      return;
+    }
+    if (formData.price < 0) {
+      setError("El precio no puede ser negativo");
+      setLoading(false);
+      return;
+    }
+
     try {
       if (service) {
         await api.updateService(businessId, service.id, formData);

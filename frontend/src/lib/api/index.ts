@@ -43,6 +43,7 @@ export const api = {
   updateBusiness: businessApi.update.bind(businessApi),
   deleteBusiness: businessApi.delete.bind(businessApi),
   getCategories: businessApi.getCategories.bind(businessApi),
+  getBusinessStats: businessApi.getStats.bind(businessApi),
 
   // Services
   getServices: servicesApi.getAll.bind(servicesApi),
@@ -60,6 +61,8 @@ export const api = {
   setWorkerSchedule: workersApi.setSchedule.bind(workersApi),
 
   // User
+  getMe: userApi.getMe.bind(userApi),
+  getMyStats: userApi.getMyStats.bind(userApi),
   updateProfile: userApi.updateProfile.bind(userApi),
   changePassword: userApi.changePassword.bind(userApi),
 
@@ -76,21 +79,26 @@ export const api = {
   createAppointment: appointmentsApi.create.bind(appointmentsApi),
   getAppointmentById: appointmentsApi.getById.bind(appointmentsApi),
   getMyAppointments: appointmentsApi.getMy.bind(appointmentsApi),
-  getMyUpcomingAppointments: appointmentsApi.getMyUpcoming.bind(appointmentsApi),
+  getMyUpcomingAppointments:
+    appointmentsApi.getMyUpcoming.bind(appointmentsApi),
   getWorkerAppointments: appointmentsApi.getForWorker.bind(appointmentsApi),
-  getUpcomingWorkerAppointments: appointmentsApi.getUpcomingForWorker.bind(appointmentsApi),
+  getUpcomingWorkerAppointments:
+    appointmentsApi.getUpcomingForWorker.bind(appointmentsApi),
   updateAppointment: appointmentsApi.update.bind(appointmentsApi),
   cancelAppointment: appointmentsApi.cancel.bind(appointmentsApi),
+  rescheduleAppointment: appointmentsApi.reschedule.bind(appointmentsApi),
   confirmAppointment: appointmentsApi.confirm.bind(appointmentsApi),
   completeAppointment: appointmentsApi.complete.bind(appointmentsApi),
-  getWorkerAvailability: appointmentsApi.getWorkerAvailability.bind(appointmentsApi),
+  getWorkerAvailability:
+    appointmentsApi.getWorkerAvailability.bind(appointmentsApi),
 
   // Reviews
   getBusinessReviews: reviewsApi.getBusinessReviews.bind(reviewsApi),
   createReview: reviewsApi.createReview.bind(reviewsApi),
 
   // Business Images (Gallery)
-  getBusinessImages: businessImagesApi.getBusinessImages.bind(businessImagesApi),
+  getBusinessImages:
+    businessImagesApi.getBusinessImages.bind(businessImagesApi),
   addBusinessImage: businessImagesApi.addImage.bind(businessImagesApi),
   removeBusinessImage: businessImagesApi.removeImage.bind(businessImagesApi),
 };

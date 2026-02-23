@@ -4,9 +4,11 @@ import com.bookhub.backend.api.dto.business.*;
 import com.bookhub.backend.api.exception.BadRequestException;
 import com.bookhub.backend.api.exception.ForbiddenException;
 import com.bookhub.backend.api.exception.ResourceNotFoundException;
+import com.bookhub.backend.api.mapper.ServiceMapper;
 import com.bookhub.backend.config.InputSanitizer;
 import com.bookhub.backend.domain.business.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,7 @@ public class ServiceManagementService {
     private final ServiceRepository serviceRepository;
     private final BusinessRepository businessRepository;
     private final InputSanitizer sanitizer;
+    private final ServiceMapper serviceMapper;
 
     /**
      * Get all services for a business
@@ -28,7 +31,7 @@ public class ServiceManagementService {
     public List<ServiceResponse> getServicesByBusiness(Long businessId) {
         return serviceRepository.findByBusinessIdAndActiveTrue(businessId)
                 .stream()
-                .map(this::toResponse)
+                .map(serviceMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -39,15 +42,16 @@ public class ServiceManagementService {
     public ServiceResponse getServiceById(Long id) {
         com.bookhub.backend.domain.business.Service service = serviceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Servicio", id));
-        return toResponse(service);
+        return serviceMapper.toResponse(service);
     }
 
     /**
      * Create a new service for a business
      */
+    @CacheEvict(value = "business-detail", key = "#businessId")
     @Transactional
     public ServiceResponse createService(Long businessId, Long userId, CreateServiceRequest request) {
-        Business business = businessRepository.findById(businessId)
+        Business business = businessRepository.findByIdBasic(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio", businessId));
 
         // Verify ownership
@@ -67,12 +71,13 @@ public class ServiceManagementService {
 
         service = serviceRepository.save(service);
 
-        return toResponse(service);
+        return serviceMapper.toResponse(service);
     }
 
     /**
      * Update a service
      */
+    @CacheEvict(value = "business-detail", allEntries = true)
     @Transactional
     public ServiceResponse updateService(Long serviceId, Long userId, UpdateServiceRequest request) {
         com.bookhub.backend.domain.business.Service service = serviceRepository.findById(serviceId)
@@ -104,12 +109,13 @@ public class ServiceManagementService {
 
         service = serviceRepository.save(service);
 
-        return toResponse(service);
+        return serviceMapper.toResponse(service);
     }
 
     /**
      * Delete service (soft delete)
      */
+    @CacheEvict(value = "business-detail", allEntries = true)
     @Transactional
     public void deleteService(Long serviceId, Long userId) {
         com.bookhub.backend.domain.business.Service service = serviceRepository.findById(serviceId)
@@ -121,20 +127,6 @@ public class ServiceManagementService {
 
         service.setActive(false);
         serviceRepository.save(service);
-    }
-
-    private ServiceResponse toResponse(com.bookhub.backend.domain.business.Service service) {
-        return ServiceResponse.builder()
-                .id(service.getId())
-                .name(service.getName())
-                .description(service.getDescription())
-                .durationMinutes(service.getDurationMinutes())
-                .price(service.getPrice())
-                .imageUrl(service.getImageUrl())
-                .active(service.isActive())
-                .businessId(service.getBusiness().getId())
-                .businessName(service.getBusiness().getName())
-                .build();
     }
 }
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { PublicOnlyRoute } from "@/components/ProtectedRoute";
 import "@/styles/auth.css";
 
@@ -12,6 +13,7 @@ type RegisterRole = "CLIENT" | "OWNER";
 
 function RegisterPageContent() {
   const router = useRouter();
+  const { loginWithResponse } = useAuth();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -45,8 +47,18 @@ function RegisterPageContent() {
     setSuccess("");
 
     // Validar longitud mínima de contraseña
-    if (formData.password.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres");
+    if (formData.password.length < 8) {
+      setError("La contraseña debe tener al menos 8 caracteres");
+      setIsLoading(false);
+      return;
+    }
+
+    // Validar complejidad de contraseña
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#+\-_])/;
+    if (!passwordRegex.test(formData.password)) {
+      setError(
+        "La contraseña debe incluir mayúscula, minúscula, número y carácter especial",
+      );
       setIsLoading(false);
       return;
     }
@@ -75,13 +87,10 @@ function RegisterPageContent() {
     };
 
     try {
-      await api.register(registerData);
-      setSuccess(
-        "¡Registro exitoso! Serás redirigido a la página de inicio de sesión.",
-      );
-      setTimeout(() => {
-        router.push("/login");
-      }, 2000);
+      const response = await api.register(registerData);
+      // Auto-login: save tokens and redirect to home
+      loginWithResponse(response);
+      router.push("/");
     } catch (err) {
       const apiError = err as ApiError;
       setError(apiError.message || "Error al registrar usuario");

@@ -41,6 +41,7 @@ public class AppointmentService {
     private final UserRepository userRepository;
     private final BusinessRepository businessRepository;
     private final InputSanitizer sanitizer;
+    private final EmailService emailService;
 
     /**
      * Create a new appointment
@@ -100,6 +101,17 @@ public class AppointmentService {
                 .build();
 
         appointment = appointmentRepository.save(appointment);
+
+        // Send confirmation email
+        try {
+            String clientName = client.getProfile() != null ? client.getProfile().getFullName() : client.getEmail();
+            String businessName = worker.getBusiness().getName();
+            String serviceName = service.getName();
+            String appointmentDate = startTime.toString();
+            emailService.sendAppointmentConfirmation(client.getEmail(), clientName, businessName, serviceName, appointmentDate);
+        } catch (Exception e) {
+            // Don't fail appointment creation if email fails
+        }
 
         return toResponse(appointment);
     }
@@ -247,6 +259,72 @@ public class AppointmentService {
 
         appointment = appointmentRepository.save(appointment);
 
+        // Send cancellation email
+        try {
+            String clientName = appointment.getClient().getProfile() != null
+                    ? appointment.getClient().getProfile().getFullName()
+                    : appointment.getClient().getEmail();
+            String businessName = appointment.getWorker().getBusiness().getName();
+            emailService.sendAppointmentCancellation(
+                    appointment.getClient().getEmail(), clientName, businessName, reason != null ? reason : "No especificada");
+        } catch (Exception e) {
+            // Don't fail cancellation if email fails
+        }
+
+        return toResponse(appointment);
+    }
+
+    /**
+     * Reschedule an appointment to a new time
+     */
+    @Transactional
+    public AppointmentResponse rescheduleAppointment(Long appointmentId, Long userId, RescheduleAppointmentRequest request) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cita", appointmentId));
+
+        boolean isClient = appointment.getClient().getId().equals(userId);
+        boolean isWorker = appointment.getWorker().getUser().getId().equals(userId);
+        boolean isOwner = appointment.getWorker().getBusiness().getOwner().getId().equals(userId);
+
+        if (!isClient && !isWorker && !isOwner) {
+            throw new ForbiddenException("No tienes permiso para reagendar esta cita");
+        }
+
+        // Only PENDING or CONFIRMED can be rescheduled
+        if (appointment.getStatus() != AppointmentStatus.PENDING &&
+                appointment.getStatus() != AppointmentStatus.CONFIRMED) {
+            throw new BadRequestException("Solo se pueden reagendar citas pendientes o confirmadas");
+        }
+
+        LocalDateTime newStartTime = request.getNewStartTime();
+        int durationMinutes = appointment.getService().getDurationMinutes();
+        LocalDateTime newEndTime = newStartTime.plusMinutes(durationMinutes);
+
+        // Validate time is not in the past
+        LocalDateTime minimumTime = LocalDateTime.now().plusMinutes(15);
+        if (newStartTime.isBefore(minimumTime)) {
+            throw new BadRequestException("La nueva hora debe ser al menos 15 minutos en el futuro");
+        }
+
+        // Validate worker availability
+        validateWorkerSchedule(appointment.getWorker().getId(), newStartTime, newEndTime);
+
+        // Check for overlapping appointments (excluding self)
+        List<Appointment> overlapping = appointmentRepository.findOverlappingAppointments(
+                appointment.getWorker().getId(), newStartTime, newEndTime);
+        overlapping.removeIf(a -> a.getId().equals(appointmentId));
+
+        if (!overlapping.isEmpty()) {
+            throw new ConflictException("El trabajador ya tiene una cita en ese horario");
+        }
+
+        appointment.setStartTime(newStartTime);
+        appointment.setEndTime(newEndTime);
+        // Reset to PENDING when rescheduled
+        appointment.setStatus(AppointmentStatus.PENDING);
+
+        appointment = appointmentRepository.save(appointment);
+
         return toResponse(appointment);
     }
 
@@ -296,7 +374,7 @@ public class AppointmentService {
      */
     @Transactional(readOnly = true)
     public PageResponse<ReviewResponse> getBusinessReviews(Long businessId, int page, int size) {
-        Business business = businessRepository.findById(businessId)
+        businessRepository.findByIdBasic(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio", businessId));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
@@ -364,18 +442,15 @@ public class AppointmentService {
     }
 
     private void updateBusinessRating(Long businessId) {
-        Object[] stats = appointmentRepository.calculateBusinessRatingStats(businessId);
+        RatingStatsProjection stats = appointmentRepository.calculateBusinessRatingStats(businessId);
 
-        if (stats[0] == null) {
+        if (stats.getAverageRating() == null) {
             return;
         }
 
-        double average = ((Number) stats[0]).doubleValue();
-        long count = ((Number) stats[1]).longValue();
-
-        Business business = businessRepository.findById(businessId).orElseThrow();
-        business.setAverageRating(BigDecimal.valueOf(average).setScale(1, RoundingMode.HALF_UP));
-        business.setTotalReviews((int) count);
+        Business business = businessRepository.findByIdBasic(businessId).orElseThrow();
+        business.setAverageRating(BigDecimal.valueOf(stats.getAverageRating()).setScale(1, RoundingMode.HALF_UP));
+        business.setTotalReviews(stats.getTotalReviews().intValue());
         businessRepository.save(business);
     }
 
@@ -491,7 +566,8 @@ public class AppointmentService {
                 
                 // Check if slot overlaps with any existing appointment
                 boolean isAvailable = existingAppointments.stream()
-                        .filter(a -> a.getStatus() != AppointmentStatus.CANCELLED)
+                        .filter(a -> a.getStatus() != AppointmentStatus.CANCELLED
+                                && a.getStatus() != AppointmentStatus.NO_SHOW)
                         .noneMatch(a -> {
                             LocalTime apptStart = a.getStartTime().toLocalTime();
                             LocalTime apptEnd = a.getEndTime().toLocalTime();

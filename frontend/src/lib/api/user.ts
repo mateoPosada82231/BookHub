@@ -1,9 +1,26 @@
 // User API module
 
 import { BaseApiClient, API_BASE_URL } from "./base";
-import { User, UpdateProfileRequest, ChangePasswordRequest } from "@/types";
+import {
+  User,
+  UserStats,
+  UpdateProfileRequest,
+  ChangePasswordRequest,
+} from "@/types";
 
 class UserApiClient extends BaseApiClient {
+  async getMe(): Promise<User> {
+    return this.request<User>("/api/users/me", {
+      method: "GET",
+    });
+  }
+
+  async getMyStats(): Promise<UserStats> {
+    return this.request<UserStats>("/api/users/me/stats", {
+      method: "GET",
+    });
+  }
+
   async updateProfile(data: UpdateProfileRequest): Promise<User> {
     return this.request<User>("/api/users/me", {
       method: "PUT",

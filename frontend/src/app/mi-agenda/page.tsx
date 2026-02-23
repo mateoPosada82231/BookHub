@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -89,7 +89,7 @@ function getStatusLabel(status: string): string {
 }
 
 // Appointment Card Component
-function AppointmentCard({
+const AppointmentCard = memo(function AppointmentCard({
   appointment,
   onComplete,
   onNoShow,
@@ -199,7 +199,7 @@ function AppointmentCard({
       )}
     </div>
   );
-}
+});
 
 // Main Content Component
 function MiAgendaContent() {
@@ -252,8 +252,9 @@ function MiAgendaContent() {
 
     try {
       setLoadingAppointments(true);
-      const data = await api.getUpcomingWorkerAppointments(selectedWorkerId);
-      setAppointments(data);
+      // Load all appointments (paginated) to support both upcoming and history tabs
+      const data = await api.getWorkerAppointments(selectedWorkerId, 0, 100);
+      setAppointments(data.content || []);
     } catch (err) {
       console.error("Error loading appointments:", err);
       setError("No se pudieron cargar las citas");
@@ -308,47 +309,90 @@ function MiAgendaContent() {
   };
 
   // Request confirmation before updating
-  const requestStatusUpdate = (
-    appointmentId: number,
-    status: "COMPLETED" | "NO_SHOW" | "CANCELLED",
-  ) => {
-    const configs = {
-      COMPLETED: {
-        title: "Completar cita",
-        message: "¿Confirmas que esta cita fue completada exitosamente?",
-      },
-      NO_SHOW: {
-        title: "Marcar como no asistió",
-        message: "¿Confirmas que el cliente no asistió a esta cita?",
-      },
-      CANCELLED: {
-        title: "Cancelar cita",
-        message:
-          "¿Estás seguro de cancelar esta cita? Se notificará al cliente.",
-      },
-    };
-    setConfirmAction({
-      appointmentId,
-      status,
-      ...configs[status],
-    });
-  };
-
-  // Group appointments by date
-  const groupedAppointments = appointments.reduce(
-    (groups, appointment) => {
-      const date = getDateFromDatetime(appointment.start_time);
-      if (!groups[date]) {
-        groups[date] = [];
-      }
-      groups[date].push(appointment);
-      return groups;
+  const requestStatusUpdate = useCallback(
+    (appointmentId: number, status: "COMPLETED" | "NO_SHOW" | "CANCELLED") => {
+      const configs = {
+        COMPLETED: {
+          title: "Completar cita",
+          message: "¿Confirmas que esta cita fue completada exitosamente?",
+        },
+        NO_SHOW: {
+          title: "Marcar como no asistió",
+          message: "¿Confirmas que el cliente no asistió a esta cita?",
+        },
+        CANCELLED: {
+          title: "Cancelar cita",
+          message:
+            "¿Estás seguro de cancelar esta cita? Se notificará al cliente.",
+        },
+      };
+      setConfirmAction({
+        appointmentId,
+        status,
+        ...configs[status],
+      });
     },
-    {} as Record<string, Appointment[]>,
+    [],
   );
 
-  // Sort dates
-  const sortedDates = Object.keys(groupedAppointments).sort();
+  const handleComplete = useCallback(
+    (id: number) => requestStatusUpdate(id, "COMPLETED"),
+    [requestStatusUpdate],
+  );
+  const handleNoShow = useCallback(
+    (id: number) => requestStatusUpdate(id, "NO_SHOW"),
+    [requestStatusUpdate],
+  );
+  const handleCancel = useCallback(
+    (id: number) => requestStatusUpdate(id, "CANCELLED"),
+    [requestStatusUpdate],
+  );
+
+  // Filter appointments by active tab
+  const filteredAppointments = useMemo(() => {
+    const now = new Date();
+    return activeTab === "upcoming"
+      ? appointments.filter(
+          (apt) =>
+            new Date(apt.start_time) >= now &&
+            apt.status !== "CANCELLED" &&
+            apt.status !== "COMPLETED" &&
+            apt.status !== "NO_SHOW",
+        )
+      : appointments.filter(
+          (apt) =>
+            new Date(apt.start_time) < now ||
+            apt.status === "CANCELLED" ||
+            apt.status === "COMPLETED" ||
+            apt.status === "NO_SHOW",
+        );
+  }, [appointments, activeTab]);
+
+  // Group appointments by date
+  const groupedAppointments = useMemo(
+    () =>
+      filteredAppointments.reduce(
+        (groups, appointment) => {
+          const date = getDateFromDatetime(appointment.start_time);
+          if (!groups[date]) {
+            groups[date] = [];
+          }
+          groups[date].push(appointment);
+          return groups;
+        },
+        {} as Record<string, Appointment[]>,
+      ),
+    [filteredAppointments],
+  );
+
+  // Sort dates (ascending for upcoming, descending for history)
+  const sortedDates = useMemo(
+    () =>
+      Object.keys(groupedAppointments).sort((a, b) =>
+        activeTab === "history" ? b.localeCompare(a) : a.localeCompare(b),
+      ),
+    [groupedAppointments, activeTab],
+  );
 
   // Today's appointments
   const today = new Date().toISOString().split("T")[0];
@@ -438,7 +482,8 @@ function MiAgendaContent() {
               </div>
               <div className="business-info-content">
                 <span className="business-info-category">
-                  {selectedBusiness.category}
+                  {selectedBusiness.category_display ||
+                    selectedBusiness.category}
                 </span>
                 <h2 className="business-info-name">{selectedBusiness.name}</h2>
                 <p className="business-info-address">
@@ -549,15 +594,9 @@ function MiAgendaContent() {
                             <AppointmentCard
                               key={appointment.id}
                               appointment={appointment}
-                              onComplete={(id) =>
-                                requestStatusUpdate(id, "COMPLETED")
-                              }
-                              onNoShow={(id) =>
-                                requestStatusUpdate(id, "NO_SHOW")
-                              }
-                              onCancel={(id) =>
-                                requestStatusUpdate(id, "CANCELLED")
-                              }
+                              onComplete={handleComplete}
+                              onNoShow={handleNoShow}
+                              onCancel={handleCancel}
                               isUpdating={isUpdating}
                             />
                           ))}

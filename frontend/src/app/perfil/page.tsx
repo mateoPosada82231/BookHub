@@ -38,6 +38,15 @@ function PerfilContent() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
   const [stats, setStats] = useState({
     appointments: 0,
     favorites: 0,
@@ -66,11 +75,12 @@ function PerfilContent() {
 
   const loadStats = async () => {
     try {
-      const appointments = await api.getMyAppointments(0, 1);
-      setStats((prev) => ({
-        ...prev,
-        appointments: appointments.total_elements,
-      }));
+      const userStats = await api.getMyStats();
+      setStats({
+        appointments: userStats.total_appointments,
+        favorites: userStats.total_favorites,
+        reviews: userStats.total_reviews,
+      });
     } catch (err) {
       // Ignore errors for stats
     }
@@ -112,6 +122,52 @@ function PerfilContent() {
 
   const handleLogout = () => {
     setShowLogoutConfirm(true);
+  };
+
+  const handleChangePassword = async () => {
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    if (!passwordForm.currentPassword || !passwordForm.newPassword) {
+      setPasswordError("Todos los campos son obligatorios");
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("Las contraseñas nuevas no coinciden");
+      return;
+    }
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+    if (!passwordRegex.test(passwordForm.newPassword)) {
+      setPasswordError(
+        "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial",
+      );
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      await api.changePassword({
+        current_password: passwordForm.currentPassword,
+        new_password: passwordForm.newPassword,
+      });
+      setPasswordSuccess("Contraseña actualizada correctamente");
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setTimeout(() => {
+        setShowChangePassword(false);
+        setPasswordSuccess(null);
+      }, 2000);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Error al cambiar la contraseña";
+      setPasswordError(message);
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   const handleConfirmLogout = async () => {
@@ -399,14 +455,17 @@ function PerfilContent() {
               <ChevronRight className="profile-menu-arrow h-5 w-5" />
             </button>
 
-            <button className="profile-menu-item">
+            <button
+              className="profile-menu-item"
+              onClick={() => setShowChangePassword(true)}
+            >
               <div className="profile-menu-icon">
                 <Shield className="h-5 w-5" />
               </div>
               <div className="profile-menu-content">
-                <div className="profile-menu-title">Privacidad y seguridad</div>
+                <div className="profile-menu-title">Cambiar contraseña</div>
                 <div className="profile-menu-description">
-                  Contraseña, verificación en dos pasos
+                  Actualiza tu contraseña de acceso
                 </div>
               </div>
               <ChevronRight className="profile-menu-arrow h-5 w-5" />
@@ -441,6 +500,125 @@ function PerfilContent() {
         variant="warning"
         loading={logoutLoading}
       />
+
+      {/* Modal de cambiar contraseña */}
+      <AnimatePresence>
+        {showChangePassword && (
+          <motion.div
+            className="confirm-dialog-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowChangePassword(false)}
+          >
+            <motion.div
+              className="confirm-dialog"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: "420px" }}
+            >
+              <div className="confirm-dialog-header">
+                <Shield className="h-6 w-6" />
+                <h3>Cambiar contraseña</h3>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.75rem",
+                  padding: "0 1.5rem",
+                }}
+              >
+                {passwordError && (
+                  <div className="auth-error">
+                    <AlertCircle className="h-4 w-4" />
+                    {passwordError}
+                  </div>
+                )}
+                {passwordSuccess && (
+                  <div
+                    className="auth-success"
+                    style={{
+                      color: "var(--success)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    {passwordSuccess}
+                  </div>
+                )}
+                <input
+                  type="password"
+                  placeholder="Contraseña actual"
+                  className="form-input"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      currentPassword: e.target.value,
+                    })
+                  }
+                />
+                <input
+                  type="password"
+                  placeholder="Nueva contraseña"
+                  className="form-input"
+                  value={passwordForm.newPassword}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      newPassword: e.target.value,
+                    })
+                  }
+                />
+                <input
+                  type="password"
+                  placeholder="Confirmar nueva contraseña"
+                  className="form-input"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      confirmPassword: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div
+                className="confirm-dialog-actions"
+                style={{ marginTop: "1rem" }}
+              >
+                <button
+                  className="btn-secondary"
+                  onClick={() => {
+                    setShowChangePassword(false);
+                    setPasswordError(null);
+                    setPasswordSuccess(null);
+                    setPasswordForm({
+                      currentPassword: "",
+                      newPassword: "",
+                      confirmPassword: "",
+                    });
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="btn-primary"
+                  onClick={handleChangePassword}
+                  disabled={passwordLoading}
+                >
+                  {passwordLoading ? "Guardando..." : "Cambiar contraseña"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

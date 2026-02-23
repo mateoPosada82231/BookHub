@@ -33,8 +33,13 @@ public class UserController {
      * Get user by ID
      */
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener usuario por ID")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+    @Operation(summary = "Obtener usuario por ID", description = "Solo el propio usuario puede consultar su perfil por ID")
+    public ResponseEntity<UserResponse> getUserById(
+            @AuthenticationPrincipal SecurityUser user,
+            @PathVariable Long id) {
+        if (!user.getId().equals(id)) {
+            return ResponseEntity.status(403).build();
+        }
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
@@ -67,9 +72,20 @@ public class UserController {
      * Find user by email (for adding workers)
      */
     @GetMapping("/search")
-    @Operation(summary = "Buscar usuario por email")
-    public ResponseEntity<UserResponse> findByEmail(@RequestParam String email) {
+    @Operation(summary = "Buscar usuario por email", description = "Solo accesible por usuarios autenticados")
+    public ResponseEntity<UserResponse> findByEmail(
+            @AuthenticationPrincipal SecurityUser user,
+            @RequestParam String email) {
         return ResponseEntity.ok(userService.findByEmail(email));
     }
-}
 
+    /**
+     * Get current user stats (appointments, favorites, reviews)
+     */
+    @GetMapping("/me/stats")
+    @Operation(summary = "Obtener estadísticas del usuario actual")
+    public ResponseEntity<UserStatsResponse> getMyStats(
+            @AuthenticationPrincipal SecurityUser user) {
+        return ResponseEntity.ok(userService.getUserStats(user.getId()));
+    }
+}

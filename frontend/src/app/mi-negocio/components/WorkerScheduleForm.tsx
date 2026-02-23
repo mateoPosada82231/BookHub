@@ -85,6 +85,19 @@ export function WorkerScheduleForm({
     setLoading(true);
     setError(null);
 
+    // Validate that start_time < end_time for available days
+    const invalidDays = schedules
+      .filter((s) => s.is_available && s.start_time >= s.end_time)
+      .map((s) => DAY_NAMES[s.day_of_week]);
+
+    if (invalidDays.length > 0) {
+      setError(
+        `La hora de inicio debe ser anterior a la hora de fin en: ${invalidDays.join(", ")}`,
+      );
+      setLoading(false);
+      return;
+    }
+
     try {
       // Only send available schedules
       const availableSchedules = schedules.filter((s) => s.is_available);

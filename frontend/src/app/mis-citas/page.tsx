@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -181,25 +181,37 @@ function MisCitasContent() {
     return null;
   }
 
-  const upcomingAppointments = appointments.filter(
-    (apt) =>
-      isUpcoming(apt.start_time) &&
-      apt.status !== "CANCELLED" &&
-      apt.status !== "COMPLETED",
+  const upcomingAppointments = useMemo(
+    () =>
+      appointments.filter(
+        (apt) =>
+          isUpcoming(apt.start_time) &&
+          apt.status !== "CANCELLED" &&
+          apt.status !== "COMPLETED",
+      ),
+    [appointments],
   );
 
-  const pastAppointments = appointments.filter(
-    (apt) =>
-      !isUpcoming(apt.start_time) ||
-      apt.status === "CANCELLED" ||
-      apt.status === "COMPLETED",
+  const pastAppointments = useMemo(
+    () =>
+      appointments.filter(
+        (apt) =>
+          !isUpcoming(apt.start_time) ||
+          apt.status === "CANCELLED" ||
+          apt.status === "COMPLETED",
+      ),
+    [appointments],
   );
 
-  const pendingCount = appointments.filter(
-    (apt) => apt.status === "PENDING",
-  ).length;
-  const displayAppointments =
-    activeTab === "upcoming" ? upcomingAppointments : pastAppointments;
+  const pendingCount = useMemo(
+    () => appointments.filter((apt) => apt.status === "PENDING").length,
+    [appointments],
+  );
+
+  const displayAppointments = useMemo(
+    () => (activeTab === "upcoming" ? upcomingAppointments : pastAppointments),
+    [activeTab, upcomingAppointments, pastAppointments],
+  );
 
   return (
     <div className="mis-citas-page">

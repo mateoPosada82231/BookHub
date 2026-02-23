@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +37,7 @@ public class BusinessImageController {
      * Add an image to business gallery (owner only)
      */
     @PostMapping
+    @PreAuthorize("hasRole('OWNER')")
     @Operation(summary = "Agregar imagen a la galería")
     public ResponseEntity<BusinessImageResponse> addImage(
             @PathVariable Long businessId,
@@ -50,6 +52,7 @@ public class BusinessImageController {
      * Remove an image from business gallery (owner only)
      */
     @DeleteMapping("/{imageId}")
+    @PreAuthorize("hasRole('OWNER')")
     @Operation(summary = "Eliminar imagen de la galería")
     public ResponseEntity<Void> removeImage(
             @PathVariable Long businessId,

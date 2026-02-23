@@ -45,6 +45,31 @@ export function BusinessForm({
     setLoading(true);
     setError(null);
 
+    // Validations
+    if (formData.name.trim().length < 2) {
+      setError("El nombre debe tener al menos 2 caracteres");
+      setLoading(false);
+      return;
+    }
+    if (!formData.address.trim()) {
+      setError("La dirección es requerida");
+      setLoading(false);
+      return;
+    }
+    if (!formData.city.trim()) {
+      setError("La ciudad es requerida");
+      setLoading(false);
+      return;
+    }
+    if (
+      formData.cover_image_url &&
+      !formData.cover_image_url.startsWith("http")
+    ) {
+      setError("La URL de imagen debe comenzar con http:// o https://");
+      setLoading(false);
+      return;
+    }
+
     try {
       if (business) {
         await api.updateBusiness(business.id, formData);

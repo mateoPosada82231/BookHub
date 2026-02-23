@@ -4,8 +4,10 @@ import com.bookhub.backend.api.dto.auth.AuthResponse;
 import com.bookhub.backend.api.dto.auth.LoginRequest;
 import com.bookhub.backend.api.dto.auth.RegisterRequest;
 import com.bookhub.backend.api.exception.BadRequestException;
+import com.bookhub.backend.config.InputSanitizer;
 import com.bookhub.backend.config.JwtService;
 import com.bookhub.backend.config.SecurityUser;
+import com.bookhub.backend.config.TokenBlacklistService;
 import com.bookhub.backend.domain.user.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -55,6 +57,12 @@ class AuthServiceTest {
     @Mock
     private EmailService emailService;
 
+    @Mock
+    private InputSanitizer sanitizer;
+
+    @Mock
+    private TokenBlacklistService tokenBlacklistService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -65,6 +73,10 @@ class AuthServiceTest {
     void setUp() {
         ReflectionTestUtils.setField(authService, "refreshExpirationMs", 604800000L);
         ReflectionTestUtils.setField(authService, "passwordResetExpirationMinutes", 60);
+
+        // Default sanitizer behavior: return the same input
+        lenient().when(sanitizer.sanitize(anyString())).thenAnswer(i -> i.getArgument(0));
+        lenient().when(sanitizer.sanitizeUrl(anyString())).thenAnswer(i -> i.getArgument(0));
 
         testProfile = Profile.builder()
                 .fullName("Test User")
@@ -318,12 +330,27 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Should logout user by deleting refresh tokens")
-    void logout_shouldDeleteRefreshTokens() {
+    @DisplayName("Should logout user by deleting refresh tokens and blacklisting access token")
+    void logout_shouldDeleteRefreshTokensAndBlacklistAccessToken() {
+        // Given
+        String accessToken = "some.jwt.token";
+
         // When
-        authService.logout(1L);
+        authService.logout(1L, accessToken);
 
         // Then
         verify(refreshTokenRepository).deleteByUserId(1L);
+        verify(tokenBlacklistService).blacklist(accessToken);
+    }
+
+    @Test
+    @DisplayName("Should logout user without access token")
+    void logout_shouldHandleNullAccessToken() {
+        // When
+        authService.logout(1L, null);
+
+        // Then
+        verify(refreshTokenRepository).deleteByUserId(1L);
+        verify(tokenBlacklistService, never()).blacklist(any());
     }
 }

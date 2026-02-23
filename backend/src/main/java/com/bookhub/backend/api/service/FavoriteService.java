@@ -79,7 +79,7 @@ public class FavoriteService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
         
-        Business business = businessRepository.findById(businessId)
+        Business business = businessRepository.findByIdBasic(businessId)
                 .orElseThrow(() -> new EntityNotFoundException("Negocio no encontrado"));
 
         Favorite favorite = Favorite.builder()
