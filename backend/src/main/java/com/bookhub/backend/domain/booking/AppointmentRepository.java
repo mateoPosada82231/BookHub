@@ -114,4 +114,11 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     RatingStatsProjection calculateBusinessRatingStats(@Param("businessId") Long businessId);
 
     long countByClientId(Long clientId);
+
+    /**
+     * Find past appointments that are still PENDING or CONFIRMED and should be auto-completed.
+     * These are appointments whose end_time has already passed.
+     */
+    @Query("SELECT a FROM Appointment a WHERE a.endTime < :now AND a.status IN ('PENDING', 'CONFIRMED')")
+    List<Appointment> findPastPendingOrConfirmed(@Param("now") LocalDateTime now);
 }

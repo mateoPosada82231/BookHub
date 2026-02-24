@@ -15,8 +15,10 @@ const nextConfig: NextConfig = {
         protocol: "http",
         hostname: "127.0.0.1",
       },
-      // Add production domains here as needed, e.g.:
-      // { protocol: "https", hostname: "api.hairhub.com" },
+      {
+        protocol: "https",
+        hostname: "**",
+      },
     ],
   },
 };

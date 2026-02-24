@@ -32,9 +32,11 @@ function getDateFromDatetime(datetime: string): string {
   return datetime.split("T")[0];
 }
 
-// Format date to display
+// Format date to display - parses date parts directly to avoid UTC timezone issues
 function formatDate(dateString: string): string {
-  const date = new Date(dateString);
+  // Parse YYYY-MM-DD directly to avoid UTC conversion shifting the day
+  const [year, month, day] = dateString.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
   return date.toLocaleDateString("es-ES", {
     weekday: "long",
     year: "numeric",
@@ -43,13 +45,13 @@ function formatDate(dateString: string): string {
   });
 }
 
-// Format time to display (from ISO datetime)
+// Format time to display (from ISO datetime) - extracts HH:MM directly
 function formatTime(datetime: string): string {
-  const date = new Date(datetime);
-  return date.toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const timePart = datetime.split("T")[1];
+  if (timePart) {
+    return timePart.substring(0, 5);
+  }
+  return datetime;
 }
 
 // Get status badge class
@@ -91,18 +93,26 @@ function getStatusLabel(status: string): string {
 // Appointment Card Component
 const AppointmentCard = memo(function AppointmentCard({
   appointment,
+  onConfirm,
   onComplete,
   onNoShow,
   onCancel,
   isUpdating,
 }: {
   appointment: Appointment;
+  onConfirm: (id: number) => void;
   onComplete: (id: number) => void;
   onNoShow: (id: number) => void;
   onCancel: (id: number) => void;
   isUpdating: boolean;
 }) {
-  const isPast = new Date(appointment.end_time) < new Date();
+  const isPast = (() => {
+    const dateOnly = appointment.end_time.split("T")[0];
+    const timePart = appointment.end_time.split("T")[1] || "00:00:00";
+    const [year, month, day] = dateOnly.split("-").map(Number);
+    const [hour, minute] = timePart.split(":").map(Number);
+    return new Date(year, month - 1, day, hour, minute) < new Date();
+  })();
   const canModify = !["COMPLETED", "CANCELLED", "NO_SHOW"].includes(
     appointment.status,
   );
@@ -161,24 +171,39 @@ const AppointmentCard = memo(function AppointmentCard({
 
       {canModify && (
         <div className="appointment-actions">
-          <button
-            className="btn-action btn-complete"
-            onClick={() => onComplete(appointment.id)}
-            disabled={isUpdating}
-            title="Marcar como completada"
-          >
-            <FontAwesomeIcon icon={faCheck} />
-            Completar
-          </button>
-          <button
-            className="btn-action btn-no-show"
-            onClick={() => onNoShow(appointment.id)}
-            disabled={isUpdating}
-            title="Cliente no asistió"
-          >
-            <FontAwesomeIcon icon={faExclamationTriangle} />
-            No asistió
-          </button>
+          {appointment.status === "PENDING" && (
+            <button
+              className="btn-action btn-complete"
+              onClick={() => onConfirm(appointment.id)}
+              disabled={isUpdating}
+              title="Confirmar cita"
+            >
+              <FontAwesomeIcon icon={faCheck} />
+              Confirmar
+            </button>
+          )}
+          {appointment.status === "CONFIRMED" && (
+            <>
+              <button
+                className="btn-action btn-complete"
+                onClick={() => onComplete(appointment.id)}
+                disabled={isUpdating}
+                title="Marcar como completada"
+              >
+                <FontAwesomeIcon icon={faCheck} />
+                Completar
+              </button>
+              <button
+                className="btn-action btn-no-show"
+                onClick={() => onNoShow(appointment.id)}
+                disabled={isUpdating}
+                title="Cliente no asistió"
+              >
+                <FontAwesomeIcon icon={faExclamationTriangle} />
+                No asistió
+              </button>
+            </>
+          )}
           <button
             className="btn-action btn-cancel"
             onClick={() => onCancel(appointment.id)}
@@ -219,7 +244,7 @@ function MiAgendaContent() {
   );
   const [confirmAction, setConfirmAction] = useState<{
     appointmentId: number;
-    status: "COMPLETED" | "NO_SHOW" | "CANCELLED";
+    status: "CONFIRMED" | "COMPLETED" | "NO_SHOW" | "CANCELLED";
     title: string;
     message: string;
   } | null>(null);
@@ -282,7 +307,7 @@ function MiAgendaContent() {
   // Update appointment status
   const handleUpdateStatus = async (
     appointmentId: number,
-    status: "COMPLETED" | "NO_SHOW" | "CANCELLED",
+    status: "CONFIRMED" | "COMPLETED" | "NO_SHOW" | "CANCELLED",
   ) => {
     try {
       setIsUpdating(true);
@@ -293,11 +318,13 @@ function MiAgendaContent() {
       }
       await loadAppointments();
       notify.success(
-        status === "COMPLETED"
-          ? "Cita marcada como completada"
-          : status === "NO_SHOW"
-            ? "Cita marcada como no asistió"
-            : "Cita cancelada correctamente",
+        status === "CONFIRMED"
+          ? "Cita confirmada exitosamente"
+          : status === "COMPLETED"
+            ? "Cita marcada como completada"
+            : status === "NO_SHOW"
+              ? "Cita marcada como no asistió"
+              : "Cita cancelada correctamente",
       );
     } catch (err: any) {
       console.error("Error updating appointment:", err);
@@ -310,8 +337,15 @@ function MiAgendaContent() {
 
   // Request confirmation before updating
   const requestStatusUpdate = useCallback(
-    (appointmentId: number, status: "COMPLETED" | "NO_SHOW" | "CANCELLED") => {
+    (
+      appointmentId: number,
+      status: "CONFIRMED" | "COMPLETED" | "NO_SHOW" | "CANCELLED",
+    ) => {
       const configs = {
+        CONFIRMED: {
+          title: "Confirmar cita",
+          message: "¿Confirmas que esta cita está programada?",
+        },
         COMPLETED: {
           title: "Completar cita",
           message: "¿Confirmas que esta cita fue completada exitosamente?",
@@ -335,6 +369,10 @@ function MiAgendaContent() {
     [],
   );
 
+  const handleConfirm = useCallback(
+    (id: number) => requestStatusUpdate(id, "CONFIRMED"),
+    [requestStatusUpdate],
+  );
   const handleComplete = useCallback(
     (id: number) => requestStatusUpdate(id, "COMPLETED"),
     [requestStatusUpdate],
@@ -348,25 +386,34 @@ function MiAgendaContent() {
     [requestStatusUpdate],
   );
 
+  // Parse datetime from ISO string without UTC conversion
+  const parseLocalDateTime = useCallback((isoString: string): Date => {
+    const dateOnly = isoString.split("T")[0];
+    const timePart = isoString.split("T")[1] || "00:00:00";
+    const [year, month, day] = dateOnly.split("-").map(Number);
+    const [hour, minute] = timePart.split(":").map(Number);
+    return new Date(year, month - 1, day, hour, minute);
+  }, []);
+
   // Filter appointments by active tab
   const filteredAppointments = useMemo(() => {
     const now = new Date();
     return activeTab === "upcoming"
       ? appointments.filter(
           (apt) =>
-            new Date(apt.start_time) >= now &&
+            parseLocalDateTime(apt.start_time) >= now &&
             apt.status !== "CANCELLED" &&
             apt.status !== "COMPLETED" &&
             apt.status !== "NO_SHOW",
         )
       : appointments.filter(
           (apt) =>
-            new Date(apt.start_time) < now ||
+            parseLocalDateTime(apt.start_time) < now ||
             apt.status === "CANCELLED" ||
             apt.status === "COMPLETED" ||
             apt.status === "NO_SHOW",
         );
-  }, [appointments, activeTab]);
+  }, [appointments, activeTab, parseLocalDateTime]);
 
   // Group appointments by date
   const groupedAppointments = useMemo(
@@ -394,8 +441,9 @@ function MiAgendaContent() {
     [groupedAppointments, activeTab],
   );
 
-  // Today's appointments
-  const today = new Date().toISOString().split("T")[0];
+  // Today's appointments - use local date to match getDateFromDatetime
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const todayAppointments = groupedAppointments[today] || [];
 
   // Loading state
@@ -594,6 +642,7 @@ function MiAgendaContent() {
                             <AppointmentCard
                               key={appointment.id}
                               appointment={appointment}
+                              onConfirm={handleConfirm}
                               onComplete={handleComplete}
                               onNoShow={handleNoShow}
                               onCancel={handleCancel}
@@ -624,11 +673,13 @@ function MiAgendaContent() {
         title={confirmAction?.title || ""}
         message={confirmAction?.message || ""}
         confirmText={
-          confirmAction?.status === "COMPLETED"
-            ? "Completar"
-            : confirmAction?.status === "NO_SHOW"
-              ? "Confirmar"
-              : "Cancelar cita"
+          confirmAction?.status === "CONFIRMED"
+            ? "Confirmar"
+            : confirmAction?.status === "COMPLETED"
+              ? "Completar"
+              : confirmAction?.status === "NO_SHOW"
+                ? "Confirmar"
+                : "Cancelar cita"
         }
         variant={
           confirmAction?.status === "CANCELLED"

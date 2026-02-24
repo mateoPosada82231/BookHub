@@ -74,7 +74,10 @@ const getStatusConfig = (status: string) => {
 };
 
 function formatDateParts(dateString: string) {
-  const date = new Date(dateString);
+  // Parse date parts directly from ISO string to avoid UTC timezone conversion
+  const dateOnly = dateString.split("T")[0];
+  const [year, month, day] = dateOnly.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
   return {
     day: date.getDate(),
     month: date.toLocaleDateString("es-ES", { month: "short" }),
@@ -83,15 +86,22 @@ function formatDateParts(dateString: string) {
 }
 
 function formatTime(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  // Extract HH:MM directly from ISO datetime to avoid timezone shifts
+  const timePart = dateString.split("T")[1];
+  if (timePart) {
+    return timePart.substring(0, 5);
+  }
+  return dateString;
 }
 
 function isUpcoming(dateString: string): boolean {
-  return new Date(dateString) > new Date();
+  // Parse datetime directly to avoid timezone issues
+  const dateOnly = dateString.split("T")[0];
+  const timePart = dateString.split("T")[1] || "00:00:00";
+  const [year, month, day] = dateOnly.split("-").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
+  const date = new Date(year, month - 1, day, hour, minute);
+  return date > new Date();
 }
 
 function MisCitasContent() {
