@@ -247,6 +247,7 @@ function MiAgendaContent() {
     status: "CONFIRMED" | "COMPLETED" | "NO_SHOW" | "CANCELLED";
     title: string;
     message: string;
+    variant: "danger" | "warning" | "info" | "success";
   } | null>(null);
 
   // Load worker profiles on mount
@@ -298,141 +299,105 @@ function MiAgendaContent() {
       if (worker?.business_id) {
         api
           .getBusinessById(worker.business_id)
-          .then((business) => setSelectedBusiness(business))
-          .catch(console.error);
+          .then(setSelectedBusiness)
+          .catch(() => setSelectedBusiness(null));
+      } else {
+        setSelectedBusiness(null);
       }
     }
   }, [selectedWorkerId, workerProfiles, loadAppointments]);
 
-  // Update appointment status
-  const handleUpdateStatus = async (
-    appointmentId: number,
-    status: "CONFIRMED" | "COMPLETED" | "NO_SHOW" | "CANCELLED",
-  ) => {
+  const handleUpdateStatus = async () => {
+    if (!confirmAction) return;
+
+    setIsUpdating(true);
     try {
-      setIsUpdating(true);
-      if (status === "CANCELLED") {
-        await api.cancelAppointment(appointmentId, "Cancelado por trabajador");
-      } else {
-        await api.updateAppointment(appointmentId, { status });
-      }
-      await loadAppointments();
-      notify.success(
-        status === "CONFIRMED"
-          ? "Cita confirmada exitosamente"
-          : status === "COMPLETED"
-            ? "Cita marcada como completada"
-            : status === "NO_SHOW"
-              ? "Cita marcada como no asistió"
-              : "Cita cancelada correctamente",
+      await api.updateAppointmentStatus(
+        confirmAction.appointmentId,
+        confirmAction.status,
       );
-    } catch (err: any) {
-      console.error("Error updating appointment:", err);
-      notify.error(err.message || "No se pudo actualizar la cita");
+      notify.success(
+        `Cita ${
+          confirmAction.status === "CONFIRMED"
+            ? "confirmada"
+            : confirmAction.status === "COMPLETED"
+              ? "completada"
+              : confirmAction.status === "CANCELLED"
+                ? "cancelada"
+                : "marcada como no asistida"
+        }
+        con éxito`,
+      );
+      await loadAppointments(); // Refresh appointments
+    } catch (err) {
+      console.error("Error updating status:", err);
+      notify.error("Error al actualizar el estado de la cita");
     } finally {
       setIsUpdating(false);
       setConfirmAction(null);
     }
   };
 
-  // Request confirmation before updating
-  const requestStatusUpdate = useCallback(
-    (
-      appointmentId: number,
-      status: "CONFIRMED" | "COMPLETED" | "NO_SHOW" | "CANCELLED",
-    ) => {
-      const configs = {
-        CONFIRMED: {
-          title: "Confirmar cita",
-          message: "¿Confirmas que esta cita está programada?",
-        },
-        COMPLETED: {
-          title: "Completar cita",
-          message: "¿Confirmas que esta cita fue completada exitosamente?",
-        },
-        NO_SHOW: {
-          title: "Marcar como no asistió",
-          message: "¿Confirmas que el cliente no asistió a esta cita?",
-        },
-        CANCELLED: {
-          title: "Cancelar cita",
-          message:
-            "¿Estás seguro de cancelar esta cita? Se notificará al cliente.",
-        },
-      };
-      setConfirmAction({
-        appointmentId,
-        status,
-        ...configs[status],
-      });
-    },
-    [],
-  );
+  const openConfirmDialog = (
+    appointmentId: number,
+    status: "CONFIRMED" | "COMPLETED" | "NO_SHOW" | "CANCELLED",
+  ) => {
+    let title = "Confirmar Acción";
+    let message = "¿Estás seguro de que deseas realizar esta acción?";
+    let variant: "danger" | "warning" | "info" | "success" = "info";
 
-  const handleConfirm = useCallback(
-    (id: number) => requestStatusUpdate(id, "CONFIRMED"),
-    [requestStatusUpdate],
-  );
-  const handleComplete = useCallback(
-    (id: number) => requestStatusUpdate(id, "COMPLETED"),
-    [requestStatusUpdate],
-  );
-  const handleNoShow = useCallback(
-    (id: number) => requestStatusUpdate(id, "NO_SHOW"),
-    [requestStatusUpdate],
-  );
-  const handleCancel = useCallback(
-    (id: number) => requestStatusUpdate(id, "CANCELLED"),
-    [requestStatusUpdate],
-  );
+    switch (status) {
+      case "CONFIRMED":
+        title = "Confirmar Cita";
+        message = "¿Estás seguro de que quieres confirmar esta cita?";
+        variant = "success";
+        break;
+      case "COMPLETED":
+        title = "Completar Cita";
+        message = "Confirma que el servicio se ha completado con éxito.";
+        variant = "success";
+        break;
+      case "NO_SHOW":
+        title = "Marcar como No Asistió";
+        message =
+          "¿Estás seguro de que el cliente no asistió a la cita? Esta acción no se puede deshacer.";
+        variant = "warning";
+        break;
+      case "CANCELLED":
+        title = "Cancelar Cita";
+        message =
+          "¿Estás seguro de que quieres cancelar esta cita? Esta acción no se puede deshacer.";
+        variant = "danger";
+        break;
+    }
 
-  // Parse datetime from ISO string without UTC conversion
-  const parseLocalDateTime = useCallback((isoString: string): Date => {
-    const dateOnly = isoString.split("T")[0];
-    const timePart = isoString.split("T")[1] || "00:00:00";
-    const [year, month, day] = dateOnly.split("-").map(Number);
-    const [hour, minute] = timePart.split(":").map(Number);
-    return new Date(year, month - 1, day, hour, minute);
-  }, []);
+    setConfirmAction({ appointmentId, status, title, message, variant });
+  };
 
-  // Filter appointments by active tab
-  const filteredAppointments = useMemo(() => {
+  // Filter appointments for upcoming and history tabs
+  const { upcomingAppointments, historyAppointments } = useMemo(() => {
     const now = new Date();
-    return activeTab === "upcoming"
-      ? appointments.filter(
-          (apt) =>
-            parseLocalDateTime(apt.start_time) >= now &&
-            apt.status !== "CANCELLED" &&
-            apt.status !== "COMPLETED" &&
-            apt.status !== "NO_SHOW",
-        )
-      : appointments.filter(
-          (apt) =>
-            parseLocalDateTime(apt.start_time) < now ||
-            apt.status === "CANCELLED" ||
-            apt.status === "COMPLETED" ||
-            apt.status === "NO_SHOW",
-        );
-  }, [appointments, activeTab, parseLocalDateTime]);
-
-  // Group appointments by date
-  const groupedAppointments = useMemo(
-    () =>
-      filteredAppointments.reduce(
-        (groups, appointment) => {
-          const date = getDateFromDatetime(appointment.start_time);
-          if (!groups[date]) {
-            groups[date] = [];
-          }
-          groups[date].push(appointment);
-          return groups;
-        },
-        {} as Record<string, Appointment[]>,
+    return {
+      upcoming: appointments.filter(
+        (apt) =>
+          parseLocalDateTime(apt.start_time) >= now &&
+          apt.status !== "CANCELLED" &&
+          apt.status !== "COMPLETED" &&
+          apt.status !== "NO_SHOW",
       ),
-    [filteredAppointments],
-  );
+      history: appointments.filter(
+        (apt) =>
+          parseLocalDateTime(apt.start_time) < now ||
+          apt.status === "CANCELLED" ||
+          apt.status === "COMPLETED" ||
+          apt.status === "NO_SHOW",
+      ),
+    };
+  }, [appointments]);
 
-  // Sort dates (ascending for upcoming, descending for history)
+  const displayedAppointments =
+    activeTab === "upcoming" ? upcomingAppointments : historyAppointments;
+
   const sortedDates = useMemo(
     () =>
       Object.keys(groupedAppointments).sort((a, b) =>
@@ -623,34 +588,25 @@ function MiAgendaContent() {
                   </p>
                 </div>
               ) : (
-                <div className="appointments-list">
-                  {sortedDates.map((date) => (
-                    <div key={date} className="date-group">
-                      <h3 className="date-header">
-                        <FontAwesomeIcon icon={faCalendarAlt} />
-                        {formatDate(date)}
-                        {date === today && (
-                          <span className="today-badge">Hoy</span>
-                        )}
-                      </h3>
-                      <div className="date-appointments">
-                        {groupedAppointments[date]
-                          .sort((a, b) =>
-                            a.start_time.localeCompare(b.start_time),
-                          )
-                          .map((appointment) => (
-                            <AppointmentCard
-                              key={appointment.id}
-                              appointment={appointment}
-                              onConfirm={handleConfirm}
-                              onComplete={handleComplete}
-                              onNoShow={handleNoShow}
-                              onCancel={handleCancel}
-                              isUpdating={isUpdating}
-                            />
-                          ))}
-                      </div>
-                    </div>
+                <div className="appointments-grid">
+                  {displayedAppointments.map((appointment) => (
+                    <AppointmentCard
+                      key={appointment.id}
+                      appointment={appointment}
+                      onConfirm={() =>
+                        openConfirmDialog(appointment.id, "CONFIRMED")
+                      }
+                      onComplete={() =>
+                        openConfirmDialog(appointment.id, "COMPLETED")
+                      }
+                      onNoShow={() =>
+                        openConfirmDialog(appointment.id, "NO_SHOW")
+                      }
+                      onCancel={() =>
+                        openConfirmDialog(appointment.id, "CANCELLED")
+                      }
+                      isUpdating={isUpdating}
+                    />
                   ))}
                 </div>
               )}
@@ -659,37 +615,17 @@ function MiAgendaContent() {
         </div>
       </main>
 
-      <ConfirmDialog
-        isOpen={!!confirmAction}
-        onClose={() => setConfirmAction(null)}
-        onConfirm={() => {
-          if (confirmAction) {
-            handleUpdateStatus(
-              confirmAction.appointmentId,
-              confirmAction.status,
-            );
-          }
-        }}
-        title={confirmAction?.title || ""}
-        message={confirmAction?.message || ""}
-        confirmText={
-          confirmAction?.status === "CONFIRMED"
-            ? "Confirmar"
-            : confirmAction?.status === "COMPLETED"
-              ? "Completar"
-              : confirmAction?.status === "NO_SHOW"
-                ? "Confirmar"
-                : "Cancelar cita"
-        }
-        variant={
-          confirmAction?.status === "CANCELLED"
-            ? "danger"
-            : confirmAction?.status === "NO_SHOW"
-              ? "warning"
-              : "info"
-        }
-        loading={isUpdating}
-      />
+      {confirmAction && (
+        <ConfirmDialog
+          isOpen={!!confirmAction}
+          onClose={() => setConfirmAction(null)}
+          onConfirm={handleUpdateStatus}
+          title={confirmAction.title}
+          message={confirmAction.message}
+          loading={isUpdating}
+          variant={confirmAction.variant}
+        />
+      )}
     </div>
   );
 }
