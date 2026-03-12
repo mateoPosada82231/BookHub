@@ -517,56 +517,7 @@
   transform: translateY(-2px);
 }
 
-/* Cancel Modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 1.5rem;
-}
-
-.modal-content {
-  background: linear-gradient(165deg, #1e1e1e 0%, #141414 40%, #0f0f0f 100%);
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 2.25rem;
-  max-width: 520px;
-  width: 100%;
-  position: relative;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.05),
-    0 25px 60px -12px rgba(0, 0, 0, 0.8),
-    0 0 80px -20px rgba(255, 255, 255, 0.03);
-}
-
-.modal-content::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 24px;
-  padding: 1px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0) 40%
-  );
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
+/* Cancel Modal Content */
 .modal-header {
   display: flex;
   align-items: center;
@@ -590,14 +541,6 @@
 .modal-icon svg {
   width: 26px;
   height: 26px;
-}
-
-.modal-title {
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0 0 0.3rem 0;
-  letter-spacing: -0.02em;
 }
 
 .modal-subtitle {

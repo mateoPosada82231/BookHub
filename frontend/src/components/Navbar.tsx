@@ -3,27 +3,26 @@
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faHouse,
-  faCalendarDays,
-  faHeart,
-  faUser,
-  faStore,
-  faBars,
-  faXmark,
-  faRightFromBracket,
-  faClipboardList,
-} from "@fortawesome/free-solid-svg-icons";
+  Home,
+  CalendarDays,
+  Heart,
+  User,
+  Store,
+  Menu,
+  X,
+  LogOut,
+  ClipboardList,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import "@/styles/home.css";
 
 interface NavItem {
   href: string;
   label: string;
-  icon: IconDefinition;
+  icon: LucideIcon;
   /** Si es true, solo se muestra si está autenticado */
   authRequired?: boolean;
   /** Roles que pueden ver este item. Si no se especifica, todos los roles autenticados lo ven */
@@ -40,20 +39,20 @@ export function Navbar() {
   // Items de navegación basados en roles
   const navItems = useMemo<NavItem[]>(() => {
     const items: NavItem[] = [
-      { href: "/", label: "Inicio", icon: faHouse },
+      { href: "/", label: "Inicio", icon: Home },
       {
         href: "/mis-citas",
         label: "Mis Citas",
-        icon: faCalendarDays,
+        icon: CalendarDays,
         authRequired: true,
       },
       {
         href: "/favoritos",
         label: "Favoritos",
-        icon: faHeart,
+        icon: Heart,
         authRequired: true,
       },
-      { href: "/perfil", label: "Perfil", icon: faUser, authRequired: true },
+      { href: "/perfil", label: "Perfil", icon: User, authRequired: true },
     ];
 
     // Agregar "Mi Agenda" solo para trabajadores
@@ -61,7 +60,7 @@ export function Navbar() {
       items.splice(2, 0, {
         href: "/mi-agenda",
         label: "Mi Agenda",
-        icon: faClipboardList,
+        icon: ClipboardList,
         authRequired: true,
         roles: ["WORKER"],
       });
@@ -72,7 +71,7 @@ export function Navbar() {
       items.push({
         href: "/mi-negocio",
         label: "Mi Negocio",
-        icon: faStore,
+        icon: Store,
         authRequired: true,
         roles: ["OWNER"],
       });
@@ -166,10 +165,7 @@ export function Navbar() {
                       : undefined
                   }
                 >
-                  <FontAwesomeIcon
-                    icon={item.icon}
-                    className="navbar-link-icon"
-                  />
+                  <item.icon size={18} className="navbar-link-icon" />
                   <span>{item.label}</span>
                 </Link>
               );
@@ -180,10 +176,7 @@ export function Navbar() {
                 onClick={handleLogout}
                 className="navbar-link navbar-logout"
               >
-                <FontAwesomeIcon
-                  icon={faRightFromBracket}
-                  className="navbar-link-icon"
-                />
+                <LogOut size={18} className="navbar-link-icon" />
                 <span>Salir</span>
               </button>
             ) : (
@@ -204,10 +197,11 @@ export function Navbar() {
             className="navbar-mobile-toggle"
             aria-label={isMobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
           >
-            <FontAwesomeIcon
-              icon={isMobileMenuOpen ? faXmark : faBars}
-              className="navbar-mobile-toggle-icon"
-            />
+            {isMobileMenuOpen ? (
+              <X size={20} className="navbar-mobile-toggle-icon" />
+            ) : (
+              <Menu size={20} className="navbar-mobile-toggle-icon" />
+            )}
           </button>
         </div>
       </div>
@@ -256,10 +250,7 @@ export function Navbar() {
                       : undefined
                   }
                 >
-                  <FontAwesomeIcon
-                    icon={item.icon}
-                    className="navbar-mobile-link-icon"
-                  />
+                  <item.icon size={18} className="navbar-mobile-link-icon" />
                   <span>{item.label}</span>
                 </Link>
               );
@@ -270,10 +261,7 @@ export function Navbar() {
                 onClick={handleLogout}
                 className="navbar-mobile-link navbar-mobile-logout"
               >
-                <FontAwesomeIcon
-                  icon={faRightFromBracket}
-                  className="navbar-mobile-link-icon"
-                />
+                <LogOut size={18} className="navbar-mobile-link-icon" />
                 <span>Cerrar Sesión</span>
               </button>
             ) : (

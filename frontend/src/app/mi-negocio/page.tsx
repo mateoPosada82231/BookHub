@@ -1,22 +1,21 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faStore,
-  faCalendarDays,
-  faUsers,
-  faStar,
-  faPlus,
-  faGear,
-  faPen,
-  faTrash,
-  faClock,
-  faSpinner,
-  faScissors,
-  faDollarSign,
-  faImage,
-} from "@fortawesome/free-solid-svg-icons";
+  Store,
+  CalendarDays,
+  Users,
+  Star,
+  Plus,
+  Settings,
+  Pen,
+  Trash2,
+  Clock,
+  Loader2,
+  Scissors,
+  DollarSign,
+  ImageIcon,
+} from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -280,7 +279,7 @@ function MiNegocioContent() {
               onClick={() => setShowBusinessForm(true)}
               className="btn-primary"
             >
-              <FontAwesomeIcon icon={faPlus} />
+              <Plus size={16} />
               Nuevo Negocio
             </button>
           </header>
@@ -296,7 +295,7 @@ function MiNegocioContent() {
                     selectedBusiness?.id === b.id ? "active" : ""
                   }`}
                 >
-                  <FontAwesomeIcon icon={faStore} />
+                  <Store size={16} />
                   {b.name}
                 </button>
               ))}
@@ -307,7 +306,7 @@ function MiNegocioContent() {
           {businesses.length === 0 && !loading && (
             <div className="empty-state-container">
               <div className="empty-state-icon">
-                <FontAwesomeIcon icon={faStore} />
+                <Store size={32} />
               </div>
               <h2>No tienes negocios registrados</h2>
               <p>Crea tu primer negocio para empezar a recibir reservas</p>
@@ -315,7 +314,7 @@ function MiNegocioContent() {
                 onClick={() => setShowBusinessForm(true)}
                 className="btn-primary"
               >
-                <FontAwesomeIcon icon={faPlus} />
+                <Plus size={16} />
                 Crear mi primer negocio
               </button>
             </div>
@@ -347,7 +346,11 @@ function MiNegocioContent() {
                       </span>
                       <h2 className="business-name">{selectedBusiness.name}</h2>
                       <div className="business-rating">
-                        <FontAwesomeIcon icon={faStar} className="star-icon" />
+                        <Star
+                          size={16}
+                          className="star-icon"
+                          fill="currentColor"
+                        />
                         <span>
                           {(selectedBusiness.average_rating || 0).toFixed(1)}
                         </span>
@@ -361,7 +364,7 @@ function MiNegocioContent() {
                       className="btn-icon"
                       title="Editar negocio"
                     >
-                      <FontAwesomeIcon icon={faGear} />
+                      <Settings size={18} />
                     </button>
                   </div>
                   <p className="business-address">
@@ -374,7 +377,7 @@ function MiNegocioContent() {
               <div className="stats-grid">
                 <div className="stat-card">
                   <div className="stat-icon stat-icon-blue">
-                    <FontAwesomeIcon icon={faCalendarDays} />
+                    <CalendarDays size={20} />
                   </div>
                   <div className="stat-value">
                     {businessStats?.appointments_today ?? "-"}
@@ -383,7 +386,7 @@ function MiNegocioContent() {
                 </div>
                 <div className="stat-card">
                   <div className="stat-icon stat-icon-green">
-                    <FontAwesomeIcon icon={faDollarSign} />
+                    <DollarSign size={20} />
                   </div>
                   <div className="stat-value">
                     {businessStats
@@ -394,14 +397,14 @@ function MiNegocioContent() {
                 </div>
                 <div className="stat-card">
                   <div className="stat-icon stat-icon-purple">
-                    <FontAwesomeIcon icon={faUsers} />
+                    <Users size={20} />
                   </div>
                   <div className="stat-value">{workers.length}</div>
                   <div className="stat-label">Trabajadores</div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-icon stat-icon-orange">
-                    <FontAwesomeIcon icon={faScissors} />
+                    <Scissors size={20} />
                   </div>
                   <div className="stat-value">{services.length}</div>
                   <div className="stat-label">Servicios</div>
@@ -458,7 +461,7 @@ function MiNegocioContent() {
                       <div className="overview-section gallery-management">
                         <div className="gallery-management-header">
                           <h4>
-                            <FontAwesomeIcon icon={faImage} />
+                            <ImageIcon size={16} />
                             Galería de imágenes
                           </h4>
                           <button
@@ -467,7 +470,7 @@ function MiNegocioContent() {
                             }
                             className="btn-add-image"
                           >
-                            <FontAwesomeIcon icon={faPlus} />
+                            <Plus size={14} />
                             Agregar imagen
                           </button>
                         </div>
@@ -531,7 +534,7 @@ function MiNegocioContent() {
                         <div className="gallery-management-grid">
                           {galleryImages.length === 0 ? (
                             <div className="gallery-empty">
-                              <FontAwesomeIcon icon={faImage} />
+                              <ImageIcon size={24} />
                               <p>No hay imágenes en la galería</p>
                             </div>
                           ) : (
@@ -560,9 +563,12 @@ function MiNegocioContent() {
                                   title="Eliminar imagen"
                                 >
                                   {deletingImageId === image.id ? (
-                                    <FontAwesomeIcon icon={faSpinner} spin />
+                                    <Loader2
+                                      size={14}
+                                      className="animate-spin"
+                                    />
                                   ) : (
-                                    <FontAwesomeIcon icon={faTrash} />
+                                    <Trash2 size={14} />
                                   )}
                                 </button>
                               </div>
@@ -585,7 +591,7 @@ function MiNegocioContent() {
                           }}
                           className="btn-secondary btn-sm"
                         >
-                          <FontAwesomeIcon icon={faPlus} />
+                          <Plus size={14} />
                           Agregar servicio
                         </button>
                       </div>
@@ -605,11 +611,11 @@ function MiNegocioContent() {
                                 </p>
                                 <div className="service-meta">
                                   <span>
-                                    <FontAwesomeIcon icon={faClock} />
+                                    <Clock size={14} />
                                     {service.duration_minutes} min
                                   </span>
                                   <span>
-                                    <FontAwesomeIcon icon={faDollarSign} />$
+                                    <DollarSign size={14} />$
                                     {service.price.toLocaleString("es-CO")}
                                   </span>
                                 </div>
@@ -623,7 +629,7 @@ function MiNegocioContent() {
                                   className="btn-icon-sm"
                                   title="Editar"
                                 >
-                                  <FontAwesomeIcon icon={faPen} />
+                                  <Pen size={14} />
                                 </button>
                                 <button
                                   onClick={() =>
@@ -632,7 +638,7 @@ function MiNegocioContent() {
                                   className="btn-icon-sm btn-danger"
                                   title="Eliminar"
                                 >
-                                  <FontAwesomeIcon icon={faTrash} />
+                                  <Trash2 size={14} />
                                 </button>
                               </div>
                             </div>
@@ -651,7 +657,7 @@ function MiNegocioContent() {
                           onClick={() => setShowWorkerForm(true)}
                           className="btn-secondary btn-sm"
                         >
-                          <FontAwesomeIcon icon={faPlus} />
+                          <Plus size={14} />
                           Agregar trabajador
                         </button>
                       </div>
@@ -675,7 +681,7 @@ function MiNegocioContent() {
                                 {worker.schedules &&
                                   worker.schedules.length > 0 && (
                                     <p className="worker-schedule-summary">
-                                      <FontAwesomeIcon icon={faClock} />
+                                      <Clock size={14} />
                                       {
                                         worker.schedules.filter(
                                           (s) => s.is_available,
@@ -691,14 +697,14 @@ function MiNegocioContent() {
                                   className="btn-icon-sm"
                                   title="Configurar horario"
                                 >
-                                  <FontAwesomeIcon icon={faClock} />
+                                  <Clock size={14} />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteWorker(worker.id)}
                                   className="btn-icon-sm btn-danger"
                                   title="Eliminar"
                                 >
-                                  <FontAwesomeIcon icon={faTrash} />
+                                  <Trash2 size={14} />
                                 </button>
                               </div>
                             </div>

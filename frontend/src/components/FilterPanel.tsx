@@ -1,8 +1,7 @@
 "use client";
 
 import { memo, useCallback, useRef, useEffect } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStar, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { Star, X } from "lucide-react";
 
 export interface FilterOptions {
   sortBy: string;
@@ -75,7 +74,7 @@ function FilterPanelComponent({
           className="filter-panel-close"
           aria-label="Cerrar filtros"
         >
-          <FontAwesomeIcon icon={faXmark} />
+          <X size={18} />
         </button>
       </div>
 
@@ -113,7 +112,11 @@ function FilterPanelComponent({
                 "Todos"
               ) : (
                 <>
-                  <FontAwesomeIcon icon={faStar} className="filter-star-icon" />
+                  <Star
+                    size={14}
+                    className="filter-star-icon"
+                    fill="currentColor"
+                  />
                   <span>{rating}+</span>
                 </>
               )}

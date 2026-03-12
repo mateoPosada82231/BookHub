@@ -19,7 +19,7 @@ import {
   History,
   Star,
 } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { LoadingSpinner, Modal } from "@/components/ui";
 import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/context/AuthContext";
@@ -504,87 +504,77 @@ function MisCitasContent() {
       </main>
 
       {/* Cancel Modal */}
-      <AnimatePresence>
-        {showCancelModal && selectedAppointment && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="modal-overlay"
-            onClick={() => setShowCancelModal(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="modal-content"
+      <Modal
+        isOpen={showCancelModal && !!selectedAppointment}
+        onClose={() => setShowCancelModal(false)}
+        title="Cancelar cita"
+        size="sm"
+      >
+        {selectedAppointment && (
+          <div style={{ padding: "0 1.75rem 1.75rem" }}>
+            <div className="modal-header">
+              <div className="modal-icon">
+                <AlertCircle />
+              </div>
+              <div>
+                <p className="modal-subtitle">
+                  Esta acción no se puede deshacer
+                </p>
+              </div>
+            </div>
+
+            <div className="modal-appointment-info">
+              <strong>{selectedAppointment.service_name}</strong>
+              <span>
+                {formatDateParts(selectedAppointment.start_time).day}{" "}
+                {formatDateParts(selectedAppointment.start_time).month} a las{" "}
+                {formatTime(selectedAppointment.start_time)}
+              </span>
+            </div>
+
+            <label
+              style={{
+                display: "block",
+                color: "#a3a3a3",
+                fontSize: "0.875rem",
+                marginBottom: "0.5rem",
+              }}
             >
-              <div className="modal-header">
-                <div className="modal-icon">
-                  <AlertCircle />
-                </div>
-                <div>
-                  <h3 className="modal-title">Cancelar cita</h3>
-                  <p className="modal-subtitle">
-                    Esta acción no se puede deshacer
-                  </p>
-                </div>
-              </div>
+              Motivo de cancelación (opcional)
+            </label>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Cuéntanos por qué cancelas..."
+              className="modal-textarea"
+              rows={3}
+            />
 
-              <div className="modal-appointment-info">
-                <strong>{selectedAppointment.service_name}</strong>
-                <span>
-                  {formatDateParts(selectedAppointment.start_time).day}{" "}
-                  {formatDateParts(selectedAppointment.start_time).month} a las{" "}
-                  {formatTime(selectedAppointment.start_time)}
-                </span>
-              </div>
-
-              <label
-                style={{
-                  display: "block",
-                  color: "#a3a3a3",
-                  fontSize: "0.875rem",
-                  marginBottom: "0.5rem",
-                }}
+            <div className="modal-actions">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="modal-btn modal-btn-secondary"
               >
-                Motivo de cancelación (opcional)
-              </label>
-              <textarea
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Cuéntanos por qué cancelas..."
-                className="modal-textarea"
-                rows={3}
-              />
-
-              <div className="modal-actions">
-                <button
-                  onClick={() => setShowCancelModal(false)}
-                  className="modal-btn modal-btn-secondary"
-                >
-                  Volver
-                </button>
-                <button
-                  onClick={handleConfirmCancel}
-                  disabled={cancellingId !== null}
-                  className="modal-btn modal-btn-danger"
-                >
-                  {cancellingId !== null ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Cancelando...
-                    </>
-                  ) : (
-                    "Confirmar cancelación"
-                  )}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
+                Volver
+              </button>
+              <button
+                onClick={handleConfirmCancel}
+                disabled={cancellingId !== null}
+                className="modal-btn modal-btn-danger"
+              >
+                {cancellingId !== null ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Cancelando...
+                  </>
+                ) : (
+                  "Confirmar cancelación"
+                )}
+              </button>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </Modal>
 
       {/* Review Modal */}
       <ReviewForm

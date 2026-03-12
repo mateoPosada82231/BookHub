@@ -1,13 +1,7 @@
 "use client";
 
 import { memo, useCallback, useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faSearch,
-  faLocationDot,
-  faLocationCrosshairs,
-  faSpinner,
-} from "@fortawesome/free-solid-svg-icons";
+import { Search, MapPin, LocateFixed, Loader2 } from "lucide-react";
 import { reverseGeocode } from "@/lib/geocoding";
 
 interface SearchBarProps {
@@ -92,7 +86,7 @@ function SearchBarComponent({
     <div className="search-container">
       <div className="search-wrapper">
         <div className="search-field search-field-main">
-          <FontAwesomeIcon icon={faSearch} className="search-icon" />
+          <Search size={16} className="search-icon" />
           <input
             type="text"
             placeholder="¿Qué estás buscando?"
@@ -104,7 +98,7 @@ function SearchBarComponent({
           />
         </div>
         <div className="search-field search-field-location">
-          <FontAwesomeIcon icon={faLocationDot} className="search-icon" />
+          <MapPin size={16} className="search-icon" />
           <input
             type="text"
             placeholder="Ubicación"
@@ -122,10 +116,14 @@ function SearchBarComponent({
             aria-label="Usar mi ubicación actual"
             title="Usar mi ubicación actual"
           >
-            <FontAwesomeIcon
-              icon={isGettingLocation ? faSpinner : faLocationCrosshairs}
-              className={`location-button-icon ${isGettingLocation ? "fa-spin" : ""}`}
-            />
+            {isGettingLocation ? (
+              <Loader2
+                size={16}
+                className="location-button-icon animate-spin"
+              />
+            ) : (
+              <LocateFixed size={16} className="location-button-icon" />
+            )}
           </button>
         </div>
         <button
@@ -133,7 +131,7 @@ function SearchBarComponent({
           className="search-button"
           aria-label="Buscar"
         >
-          <FontAwesomeIcon icon={faSearch} className="search-button-icon" />
+          <Search size={16} className="search-button-icon" />
           <span>Buscar</span>
         </button>
       </div>

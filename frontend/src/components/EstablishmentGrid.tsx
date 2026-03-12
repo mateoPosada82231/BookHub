@@ -1,8 +1,7 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFilter, faSearch } from "@fortawesome/free-solid-svg-icons";
+import { SlidersHorizontal, Search } from "lucide-react";
 import { EstablishmentCard } from "./EstablishmentCard";
 import { FilterPanel, type FilterOptions } from "./FilterPanel";
 import type { BusinessSummary } from "@/types";
@@ -55,7 +54,7 @@ function EstablishmentGridComponent({
                 className={`filter-button ${hasActiveFilters ? "filter-button-active" : ""}`}
                 aria-label="Abrir filtros"
               >
-                <FontAwesomeIcon icon={faFilter} className="filter-icon" />
+                <SlidersHorizontal size={16} className="filter-icon" />
                 <span>Filtros</span>
               </button>
               {filters && onFilterApply && onFilterClose && (
@@ -94,7 +93,7 @@ function EstablishmentGridComponent({
         ) : (
           <div className="empty-state">
             <div className="empty-icon-container">
-              <FontAwesomeIcon icon={faSearch} className="empty-icon" />
+              <Search size={32} className="empty-icon" />
             </div>
             <h3 className="empty-title">No encontramos resultados</h3>
             <p className="empty-description">

@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { X } from "lucide-react";
 import { api } from "@/lib/api";
 import { notify } from "@/components/ui/toast";
+import { Modal } from "@/components/ui";
 import type { Worker } from "@/types";
 
 const DAY_NAMES = [
@@ -114,126 +113,89 @@ export function WorkerScheduleForm({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.25 }}
-      className="modal-overlay"
-      onClick={onCancel}
+    <Modal
+      isOpen={true}
+      onClose={onCancel}
+      title={`Horario de ${worker.full_name}`}
+      size="lg"
     >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.92, y: 24 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.92, y: 24 }}
-        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className="modal-container modal-large"
-        onClick={(e) => e.stopPropagation()}
+      <form
+        onSubmit={handleSubmit}
+        className="modal-form"
+        style={{ padding: "0.5rem 2.25rem 2.25rem" }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "1.75rem",
-          }}
-        >
-          <h2 className="modal-title" style={{ marginBottom: 0 }}>
-            Horario de {worker.full_name}
-          </h2>
-          <button
-            type="button"
-            onClick={onCancel}
-            style={{
-              padding: "0.5rem",
-              borderRadius: "10px",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.06)",
-              color: "#666",
-              cursor: "pointer",
-              transition: "all 0.2s",
-              display: "flex",
-            }}
-            aria-label="Cerrar"
-          >
-            <X size={18} />
-          </button>
+        <p className="schedule-instructions">
+          Configura los días y horas de trabajo para este profesional.
+        </p>
+
+        <div className="schedule-grid">
+          {schedules.map((schedule) => (
+            <div
+              key={schedule.day_of_week}
+              className={`schedule-day ${schedule.is_available ? "active" : ""}`}
+            >
+              <div className="schedule-day-header">
+                <label className="schedule-toggle">
+                  <input
+                    type="checkbox"
+                    checked={schedule.is_available}
+                    onChange={() => handleToggleDay(schedule.day_of_week)}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+                <span className="day-name">
+                  {DAY_NAMES[schedule.day_of_week]}
+                </span>
+              </div>
+
+              {schedule.is_available && (
+                <div className="schedule-times">
+                  <div className="time-input">
+                    <label>Inicio</label>
+                    <input
+                      type="time"
+                      value={schedule.start_time}
+                      onChange={(e) =>
+                        handleTimeChange(
+                          schedule.day_of_week,
+                          "start_time",
+                          e.target.value,
+                        )
+                      }
+                    />
+                  </div>
+                  <span className="time-separator">-</span>
+                  <div className="time-input">
+                    <label>Fin</label>
+                    <input
+                      type="time"
+                      value={schedule.end_time}
+                      onChange={(e) =>
+                        handleTimeChange(
+                          schedule.day_of_week,
+                          "end_time",
+                          e.target.value,
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="modal-form">
-          <p className="schedule-instructions">
-            Configura los días y horas de trabajo para este profesional.
-          </p>
+        {error && <div className="form-error">{error}</div>}
 
-          <div className="schedule-grid">
-            {schedules.map((schedule) => (
-              <div
-                key={schedule.day_of_week}
-                className={`schedule-day ${schedule.is_available ? "active" : ""}`}
-              >
-                <div className="schedule-day-header">
-                  <label className="schedule-toggle">
-                    <input
-                      type="checkbox"
-                      checked={schedule.is_available}
-                      onChange={() => handleToggleDay(schedule.day_of_week)}
-                    />
-                    <span className="toggle-slider"></span>
-                  </label>
-                  <span className="day-name">
-                    {DAY_NAMES[schedule.day_of_week]}
-                  </span>
-                </div>
-
-                {schedule.is_available && (
-                  <div className="schedule-times">
-                    <div className="time-input">
-                      <label>Inicio</label>
-                      <input
-                        type="time"
-                        value={schedule.start_time}
-                        onChange={(e) =>
-                          handleTimeChange(
-                            schedule.day_of_week,
-                            "start_time",
-                            e.target.value,
-                          )
-                        }
-                      />
-                    </div>
-                    <span className="time-separator">-</span>
-                    <div className="time-input">
-                      <label>Fin</label>
-                      <input
-                        type="time"
-                        value={schedule.end_time}
-                        onChange={(e) =>
-                          handleTimeChange(
-                            schedule.day_of_week,
-                            "end_time",
-                            e.target.value,
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {error && <div className="form-error">{error}</div>}
-
-          <div className="modal-actions">
-            <button type="button" onClick={onCancel} className="btn-secondary">
-              Cancelar
-            </button>
-            <button type="submit" disabled={loading} className="btn-primary">
-              {loading ? "Guardando..." : "Guardar horario"}
-            </button>
-          </div>
-        </form>
-      </motion.div>
-    </motion.div>
+        <div className="modal-actions">
+          <button type="button" onClick={onCancel} className="btn-secondary">
+            Cancelar
+          </button>
+          <button type="submit" disabled={loading} className="btn-primary">
+            {loading ? "Guardando..." : "Guardar horario"}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }

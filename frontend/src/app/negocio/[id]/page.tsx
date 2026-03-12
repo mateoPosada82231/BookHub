@@ -3,22 +3,21 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faArrowLeft,
-  faStar,
-  faSpinner,
-  faMapMarkerAlt,
-  faClock,
-  faScissors,
-  faUser,
-  faCalendarAlt,
-  faChevronLeft,
-  faChevronRight,
-  faCheck,
-  faExclamationTriangle,
-  faTimes,
-} from "@fortawesome/free-solid-svg-icons";
+  ArrowLeft,
+  Star,
+  Loader2,
+  MapPin,
+  Clock,
+  Scissors,
+  User,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  AlertTriangle,
+  X,
+} from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Navbar } from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
@@ -396,7 +395,7 @@ function NegocioContent() {
         <Navbar />
         <main className="negocio-main">
           <div className="negocio-error">
-            <FontAwesomeIcon icon={faExclamationTriangle} />
+            <AlertTriangle size={32} />
             <h2>{error || "Negocio no encontrado"}</h2>
             <button className="btn-primary" onClick={() => router.push("/")}>
               Volver al inicio
@@ -415,7 +414,7 @@ function NegocioContent() {
         <main className="negocio-main">
           <div className="booking-success">
             <div className="success-icon">
-              <FontAwesomeIcon icon={faCheck} />
+              <Check size={32} />
             </div>
             <h2>¡Cita reservada!</h2>
             <p>Tu cita ha sido reservada exitosamente.</p>
@@ -467,7 +466,7 @@ function NegocioContent() {
         <div className="negocio-content">
           {/* Back button */}
           <button className="back-button" onClick={() => router.back()}>
-            <FontAwesomeIcon icon={faArrowLeft} />
+            <ArrowLeft size={16} />
             Volver
           </button>
 
@@ -485,7 +484,7 @@ function NegocioContent() {
                 />
               ) : (
                 <div className="hero-placeholder">
-                  <FontAwesomeIcon icon={faScissors} />
+                  <Scissors size={24} />
                 </div>
               )}
             </div>
@@ -496,11 +495,11 @@ function NegocioContent() {
               <h1 className="business-name">{business.name}</h1>
               <div className="business-meta">
                 <span className="business-rating">
-                  <FontAwesomeIcon icon={faStar} className="star-icon" />
+                  <Star size={16} className="star-icon" fill="currentColor" />
                   {business.average_rating?.toFixed(1) || "Nuevo"}
                 </span>
                 <span className="business-address">
-                  <FontAwesomeIcon icon={faMapMarkerAlt} />
+                  <MapPin size={14} />
                   {business.address}
                 </span>
               </div>
@@ -565,7 +564,7 @@ function NegocioContent() {
                             )}
                             <div className="service-card-meta">
                               <span>
-                                <FontAwesomeIcon icon={faClock} />
+                                <Clock size={14} />
                                 {service.duration_minutes} min
                               </span>
                               <span className="service-price">
@@ -575,7 +574,7 @@ function NegocioContent() {
                           </div>
                           {selectedService?.id === service.id && (
                             <div className="selected-check">
-                              <FontAwesomeIcon icon={faCheck} />
+                              <Check size={14} />
                             </div>
                           )}
                         </div>
@@ -624,7 +623,7 @@ function NegocioContent() {
                           </div>
                           {selectedWorker?.id === worker.id && (
                             <div className="selected-check">
-                              <FontAwesomeIcon icon={faCheck} />
+                              <Check size={14} />
                             </div>
                           )}
                         </div>
@@ -692,7 +691,7 @@ function NegocioContent() {
                       <h4>Hora</h4>
                       {loadingAvailability ? (
                         <div className="loading-slots">
-                          <FontAwesomeIcon icon={faSpinner} spin />
+                          <Loader2 size={16} className="animate-spin" />
                           <span>Cargando disponibilidad...</span>
                         </div>
                       ) : (
@@ -750,10 +749,7 @@ function NegocioContent() {
 
                   <div className="booking-summary">
                     <div className="summary-item">
-                      <FontAwesomeIcon
-                        icon={faScissors}
-                        className="summary-icon"
-                      />
+                      <Scissors size={18} className="summary-icon" />
                       <div>
                         <span className="summary-label">Servicio</span>
                         <span className="summary-value">
@@ -766,7 +762,7 @@ function NegocioContent() {
                     </div>
 
                     <div className="summary-item">
-                      <FontAwesomeIcon icon={faUser} className="summary-icon" />
+                      <User size={18} className="summary-icon" />
                       <div>
                         <span className="summary-label">Profesional</span>
                         <span className="summary-value">
@@ -776,10 +772,7 @@ function NegocioContent() {
                     </div>
 
                     <div className="summary-item">
-                      <FontAwesomeIcon
-                        icon={faCalendarAlt}
-                        className="summary-icon"
-                      />
+                      <Calendar size={18} className="summary-icon" />
                       <div>
                         <span className="summary-label">Fecha y hora</span>
                         <span className="summary-value">
@@ -790,10 +783,7 @@ function NegocioContent() {
                     </div>
 
                     <div className="summary-item">
-                      <FontAwesomeIcon
-                        icon={faClock}
-                        className="summary-icon"
-                      />
+                      <Clock size={18} className="summary-icon" />
                       <div>
                         <span className="summary-label">Duración</span>
                         <span className="summary-value">
@@ -828,7 +818,7 @@ function NegocioContent() {
             <div className="booking-navigation">
               {step !== "service" && (
                 <button className="btn-secondary" onClick={goToPreviousStep}>
-                  <FontAwesomeIcon icon={faChevronLeft} />
+                  <ChevronLeft size={16} />
                   Anterior
                 </button>
               )}
@@ -841,13 +831,13 @@ function NegocioContent() {
                 >
                   {isBooking ? (
                     <>
-                      <FontAwesomeIcon icon={faSpinner} spin />
+                      <Loader2 size={16} className="animate-spin" />
                       Reservando...
                     </>
                   ) : (
                     <>
                       Confirmar reserva
-                      <FontAwesomeIcon icon={faCheck} />
+                      <Check size={16} />
                     </>
                   )}
                 </button>
@@ -862,7 +852,7 @@ function NegocioContent() {
                   }
                 >
                   Siguiente
-                  <FontAwesomeIcon icon={faChevronRight} />
+                  <ChevronRight size={16} />
                 </button>
               )}
             </div>
@@ -870,10 +860,10 @@ function NegocioContent() {
             {/* Error message */}
             {error && (
               <div className="booking-error">
-                <FontAwesomeIcon icon={faExclamationTriangle} />
+                <AlertTriangle size={16} />
                 {error}
                 <button onClick={() => setError(null)}>
-                  <FontAwesomeIcon icon={faTimes} />
+                  <X size={14} />
                 </button>
               </div>
             )}

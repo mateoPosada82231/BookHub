@@ -2,21 +2,20 @@
 
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useRouter } from "next/navigation";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faCalendarAlt,
-  faSpinner,
-  faClock,
-  faUser,
-  faScissors,
-  faCheckCircle,
-  faTimes,
-  faExclamationTriangle,
-  faStore,
-  faArrowRight,
-  faCheck,
-  faTimesCircle,
-} from "@fortawesome/free-solid-svg-icons";
+  Calendar,
+  Loader2,
+  Clock,
+  User,
+  Scissors,
+  CheckCircle,
+  X,
+  AlertTriangle,
+  Store,
+  ArrowRight,
+  Check,
+  XCircle,
+} from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -123,11 +122,11 @@ const AppointmentCard = memo(function AppointmentCard({
       <div className="appointment-header">
         <div className="appointment-date-time">
           <span className="appointment-date">
-            <FontAwesomeIcon icon={faCalendarAlt} />
+            <Calendar size={14} />
             {formatDate(appointmentDate)}
           </span>
           <span className="appointment-time">
-            <FontAwesomeIcon icon={faClock} />
+            <Clock size={14} />
             {formatTime(appointment.start_time)} -{" "}
             {formatTime(appointment.end_time)}
           </span>
@@ -139,7 +138,7 @@ const AppointmentCard = memo(function AppointmentCard({
 
       <div className="appointment-body">
         <div className="client-info">
-          <FontAwesomeIcon icon={faUser} className="info-icon" />
+          <User size={16} className="info-icon" />
           <div>
             <span className="info-label">Cliente</span>
             <span className="info-value">
@@ -149,7 +148,7 @@ const AppointmentCard = memo(function AppointmentCard({
         </div>
 
         <div className="service-info">
-          <FontAwesomeIcon icon={faScissors} className="info-icon" />
+          <Scissors size={16} className="info-icon" />
           <div>
             <span className="info-label">Servicio</span>
             <span className="info-value">
@@ -178,7 +177,7 @@ const AppointmentCard = memo(function AppointmentCard({
               disabled={isUpdating}
               title="Confirmar cita"
             >
-              <FontAwesomeIcon icon={faCheck} />
+              <Check size={14} />
               Confirmar
             </button>
           )}
@@ -190,7 +189,7 @@ const AppointmentCard = memo(function AppointmentCard({
                 disabled={isUpdating}
                 title="Marcar como completada"
               >
-                <FontAwesomeIcon icon={faCheck} />
+                <Check size={14} />
                 Completar
               </button>
               <button
@@ -199,7 +198,7 @@ const AppointmentCard = memo(function AppointmentCard({
                 disabled={isUpdating}
                 title="Cliente no asistió"
               >
-                <FontAwesomeIcon icon={faExclamationTriangle} />
+                <AlertTriangle size={14} />
                 No asistió
               </button>
             </>
@@ -210,7 +209,7 @@ const AppointmentCard = memo(function AppointmentCard({
             disabled={isUpdating}
             title="Cancelar cita"
           >
-            <FontAwesomeIcon icon={faTimesCircle} />
+            <XCircle size={14} />
             Cancelar
           </button>
         </div>
@@ -312,10 +311,9 @@ function MiAgendaContent() {
 
     setIsUpdating(true);
     try {
-      await api.updateAppointmentStatus(
-        confirmAction.appointmentId,
-        confirmAction.status,
-      );
+      await api.updateAppointment(confirmAction.appointmentId, {
+        status: confirmAction.status,
+      });
       notify.success(
         `Cita ${
           confirmAction.status === "CONFIRMED"
@@ -375,28 +373,44 @@ function MiAgendaContent() {
   };
 
   // Filter appointments for upcoming and history tabs
-  const { upcomingAppointments, historyAppointments } = useMemo(() => {
-    const now = new Date();
-    return {
-      upcoming: appointments.filter(
-        (apt) =>
-          parseLocalDateTime(apt.start_time) >= now &&
-          apt.status !== "CANCELLED" &&
-          apt.status !== "COMPLETED" &&
-          apt.status !== "NO_SHOW",
-      ),
-      history: appointments.filter(
-        (apt) =>
-          parseLocalDateTime(apt.start_time) < now ||
-          apt.status === "CANCELLED" ||
-          apt.status === "COMPLETED" ||
-          apt.status === "NO_SHOW",
-      ),
-    };
-  }, [appointments]);
+  const { upcoming: upcomingAppointments, history: historyAppointments } =
+    useMemo(() => {
+      const now = new Date();
+      const parseLocal = (dt: string) => {
+        const [datePart, timePart = "00:00:00"] = dt.split("T");
+        const [y, m, d] = datePart.split("-").map(Number);
+        const [h, min] = timePart.split(":").map(Number);
+        return new Date(y, m - 1, d, h, min);
+      };
+      return {
+        upcoming: appointments.filter(
+          (apt) =>
+            parseLocal(apt.start_time) >= now &&
+            apt.status !== "CANCELLED" &&
+            apt.status !== "COMPLETED" &&
+            apt.status !== "NO_SHOW",
+        ),
+        history: appointments.filter(
+          (apt) =>
+            parseLocal(apt.start_time) < now ||
+            apt.status === "CANCELLED" ||
+            apt.status === "COMPLETED" ||
+            apt.status === "NO_SHOW",
+        ),
+      };
+    }, [appointments]);
 
   const displayedAppointments =
     activeTab === "upcoming" ? upcomingAppointments : historyAppointments;
+
+  const groupedAppointments = useMemo(() => {
+    const groups: Record<string, typeof displayedAppointments> = {};
+    for (const apt of displayedAppointments) {
+      const date = getDateFromDatetime(apt.start_time);
+      (groups[date] ??= []).push(apt);
+    }
+    return groups;
+  }, [displayedAppointments]);
 
   const sortedDates = useMemo(
     () =>
@@ -427,7 +441,7 @@ function MiAgendaContent() {
           <div className="mi-agenda-content">
             <div className="empty-state-container">
               <div className="empty-state-icon">
-                <FontAwesomeIcon icon={faStore} />
+                <Store size={32} />
               </div>
               <h2>No estás asignado a ningún negocio</h2>
               <p>
@@ -467,7 +481,7 @@ function MiAgendaContent() {
                   }`}
                   onClick={() => setSelectedWorkerId(profile.id)}
                 >
-                  <FontAwesomeIcon icon={faStore} />
+                  <Store size={16} />
                   {profile.business_name || `Negocio ${profile.business_id}`}
                 </button>
               ))}
@@ -489,7 +503,7 @@ function MiAgendaContent() {
                   />
                 ) : (
                   <div className="business-info-placeholder">
-                    <FontAwesomeIcon icon={faStore} />
+                    <Store size={24} />
                   </div>
                 )}
               </div>
@@ -509,10 +523,10 @@ function MiAgendaContent() {
           {/* Error message */}
           {error && (
             <div className="error-message">
-              <FontAwesomeIcon icon={faExclamationTriangle} />
+              <AlertTriangle size={16} />
               {error}
               <button onClick={() => setError(null)} className="error-close">
-                <FontAwesomeIcon icon={faTimes} />
+                <X size={14} />
               </button>
             </div>
           )}
@@ -521,21 +535,21 @@ function MiAgendaContent() {
           <div className="stats-grid">
             <div className="stat-card">
               <div className="stat-icon stat-icon-blue">
-                <FontAwesomeIcon icon={faCalendarAlt} />
+                <Calendar size={20} />
               </div>
               <span className="stat-value">{todayAppointments.length}</span>
               <span className="stat-label">Citas hoy</span>
             </div>
             <div className="stat-card">
               <div className="stat-icon stat-icon-green">
-                <FontAwesomeIcon icon={faClock} />
+                <Clock size={20} />
               </div>
               <span className="stat-value">{appointments.length}</span>
               <span className="stat-label">Próximas citas</span>
             </div>
             <div className="stat-card">
               <div className="stat-icon stat-icon-purple">
-                <FontAwesomeIcon icon={faCheckCircle} />
+                <CheckCircle size={20} />
               </div>
               <span className="stat-value">
                 {appointments.filter((a) => a.status === "CONFIRMED").length}
@@ -544,7 +558,7 @@ function MiAgendaContent() {
             </div>
             <div className="stat-card">
               <div className="stat-icon stat-icon-orange">
-                <FontAwesomeIcon icon={faExclamationTriangle} />
+                <AlertTriangle size={20} />
               </div>
               <span className="stat-value">
                 {appointments.filter((a) => a.status === "PENDING").length}
@@ -560,14 +574,14 @@ function MiAgendaContent() {
                 className={`tab ${activeTab === "upcoming" ? "active" : ""}`}
                 onClick={() => setActiveTab("upcoming")}
               >
-                <FontAwesomeIcon icon={faArrowRight} />
+                <ArrowRight size={14} />
                 Próximas citas
               </button>
               <button
                 className={`tab ${activeTab === "history" ? "active" : ""}`}
                 onClick={() => setActiveTab("history")}
               >
-                <FontAwesomeIcon icon={faClock} />
+                <Clock size={14} />
                 Historial
               </button>
             </div>
@@ -575,12 +589,12 @@ function MiAgendaContent() {
             <div className="tab-content">
               {loadingAppointments ? (
                 <div className="loading-appointments">
-                  <FontAwesomeIcon icon={faSpinner} spin />
+                  <Loader2 size={16} className="animate-spin" />
                   <span>Cargando citas...</span>
                 </div>
               ) : appointments.length === 0 ? (
                 <div className="empty-appointments">
-                  <FontAwesomeIcon icon={faCalendarAlt} />
+                  <Calendar size={32} />
                   <h3>No hay citas programadas</h3>
                   <p>
                     Las citas de tus clientes aparecerán aquí cuando las

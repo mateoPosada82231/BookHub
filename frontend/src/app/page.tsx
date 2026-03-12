@@ -2,8 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBookOpen } from "@fortawesome/free-solid-svg-icons";
+import { BookOpen } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { SkeletonGrid } from "@/components/ui/Skeleton";
 import { Navbar } from "@/components/Navbar";
@@ -283,10 +282,7 @@ function HomePageContent() {
       <footer className="home-footer">
         <div className="home-footer-content">
           <div className="home-footer-logo">
-            <FontAwesomeIcon
-              icon={faBookOpen}
-              className="home-footer-logo-icon"
-            />
+            <BookOpen size={24} className="home-footer-logo-icon" />
             <span className="home-footer-logo-text">BOOKHUB</span>
           </div>
           <p className="home-footer-copyright">

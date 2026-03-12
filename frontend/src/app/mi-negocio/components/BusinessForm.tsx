@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
 import { api } from "@/lib/api";
 import { notify } from "@/components/ui/toast";
+import { Modal } from "@/components/ui";
 import type { Business, CreateBusinessRequest } from "@/types";
 
 interface BusinessFormData {
@@ -90,160 +89,121 @@ export function BusinessForm({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.25 }}
-      className="modal-overlay"
-      onClick={onCancel}
+    <Modal
+      isOpen={true}
+      onClose={onCancel}
+      title={business ? "Editar Negocio" : "Nuevo Negocio"}
+      size="md"
     >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.92, y: 24 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.92, y: 24 }}
-        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className="modal-container"
-        onClick={(e) => e.stopPropagation()}
+      <form
+        onSubmit={handleSubmit}
+        className="modal-form"
+        style={{ padding: "0.5rem 2.25rem 2.25rem" }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "1.75rem",
-          }}
-        >
-          <h2 className="modal-title" style={{ marginBottom: 0 }}>
-            {business ? "Editar Negocio" : "Nuevo Negocio"}
-          </h2>
-          <button
-            type="button"
-            onClick={onCancel}
-            style={{
-              padding: "0.5rem",
-              borderRadius: "10px",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.06)",
-              color: "#666",
-              cursor: "pointer",
-              transition: "all 0.2s",
-              display: "flex",
-            }}
-            aria-label="Cerrar"
-          >
-            <X size={18} />
-          </button>
+        <div className="form-group">
+          <label>Nombre del negocio</label>
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            required
+            placeholder="Mi Barbería"
+          />
         </div>
 
-        <form onSubmit={handleSubmit} className="modal-form">
+        <div className="form-group">
+          <label>Categoría</label>
+          <select
+            value={formData.category}
+            onChange={(e) =>
+              setFormData({ ...formData, category: e.target.value })
+            }
+          >
+            <option value="BARBERSHOP">Barbería</option>
+            <option value="HAIR_SALON">Salón de Belleza</option>
+            <option value="NAIL_SALON">Manicura/Pedicura</option>
+            <option value="SPA">Spa</option>
+            <option value="CAR_WASH">Autolavado</option>
+            <option value="PET_GROOMING">Peluquería de Mascotas</option>
+            <option value="TATTOO_STUDIO">Estudio de Tatuajes</option>
+            <option value="OTHER">Otro</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label>Descripción</label>
+          <textarea
+            value={formData.description}
+            onChange={(e) =>
+              setFormData({ ...formData, description: e.target.value })
+            }
+            placeholder="Describe tu negocio..."
+            rows={3}
+          />
+        </div>
+
+        <div className="form-row">
           <div className="form-group">
-            <label>Nombre del negocio</label>
+            <label>Dirección</label>
             <input
               type="text"
-              value={formData.name}
+              value={formData.address}
               onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
+                setFormData({ ...formData, address: e.target.value })
               }
               required
-              placeholder="Mi Barbería"
+              placeholder="Calle 123 #45-67"
             />
           </div>
-
           <div className="form-group">
-            <label>Categoría</label>
-            <select
-              value={formData.category}
-              onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
-              }
-            >
-              <option value="BARBERSHOP">Barbería</option>
-              <option value="HAIR_SALON">Salón de Belleza</option>
-              <option value="NAIL_SALON">Manicura/Pedicura</option>
-              <option value="SPA">Spa</option>
-              <option value="CAR_WASH">Autolavado</option>
-              <option value="PET_GROOMING">Peluquería de Mascotas</option>
-              <option value="TATTOO_STUDIO">Estudio de Tatuajes</option>
-              <option value="OTHER">Otro</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Descripción</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              placeholder="Describe tu negocio..."
-              rows={3}
-            />
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Dirección</label>
-              <input
-                type="text"
-                value={formData.address}
-                onChange={(e) =>
-                  setFormData({ ...formData, address: e.target.value })
-                }
-                required
-                placeholder="Calle 123 #45-67"
-              />
-            </div>
-            <div className="form-group">
-              <label>Ciudad</label>
-              <input
-                type="text"
-                value={formData.city}
-                onChange={(e) =>
-                  setFormData({ ...formData, city: e.target.value })
-                }
-                required
-                placeholder="Medellín"
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Teléfono</label>
+            <label>Ciudad</label>
             <input
-              type="tel"
-              value={formData.phone}
+              type="text"
+              value={formData.city}
               onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
+                setFormData({ ...formData, city: e.target.value })
               }
-              placeholder="300 123 4567"
+              required
+              placeholder="Medellín"
             />
           </div>
+        </div>
 
-          <div className="form-group">
-            <label>URL de imagen de portada</label>
-            <input
-              type="url"
-              value={formData.cover_image_url}
-              onChange={(e) =>
-                setFormData({ ...formData, cover_image_url: e.target.value })
-              }
-              placeholder="https://..."
-            />
-          </div>
+        <div className="form-group">
+          <label>Teléfono</label>
+          <input
+            type="tel"
+            value={formData.phone}
+            onChange={(e) =>
+              setFormData({ ...formData, phone: e.target.value })
+            }
+            placeholder="300 123 4567"
+          />
+        </div>
 
-          {error && <div className="form-error">{error}</div>}
+        <div className="form-group">
+          <label>URL de imagen de portada</label>
+          <input
+            type="url"
+            value={formData.cover_image_url}
+            onChange={(e) =>
+              setFormData({ ...formData, cover_image_url: e.target.value })
+            }
+            placeholder="https://..."
+          />
+        </div>
 
-          <div className="modal-actions">
-            <button type="button" onClick={onCancel} className="btn-secondary">
-              Cancelar
-            </button>
-            <button type="submit" disabled={loading} className="btn-primary">
-              {loading ? "Guardando..." : "Guardar"}
-            </button>
-          </div>
-        </form>
-      </motion.div>
-    </motion.div>
+        {error && <div className="form-error">{error}</div>}
+
+        <div className="modal-actions">
+          <button type="button" onClick={onCancel} className="btn-secondary">
+            Cancelar
+          </button>
+          <button type="submit" disabled={loading} className="btn-primary">
+            {loading ? "Guardando..." : "Guardar"}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }

@@ -2,14 +2,7 @@
 
 import { memo, useCallback, useState } from "react";
 import Image from "next/image";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faStar,
-  faHeart as faHeartSolid,
-  faLocationDot,
-  faScissors,
-} from "@fortawesome/free-solid-svg-icons";
-import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
+import { Star, Heart, MapPin, Scissors } from "lucide-react";
 import type { BusinessSummary } from "@/types";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
@@ -89,9 +82,10 @@ function EstablishmentCardComponent({
             isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"
           }
         >
-          <FontAwesomeIcon
-            icon={isFavorite ? faHeartSolid : faHeartRegular}
+          <Heart
+            size={18}
             className={`favorite-icon ${isFavorite ? "favorite-icon-active" : ""}`}
+            fill={isFavorite ? "currentColor" : "none"}
           />
         </button>
 
@@ -105,7 +99,7 @@ function EstablishmentCardComponent({
         {/* Services Count Badge */}
         <div className="price-badge-container">
           <span className="price-badge">
-            <FontAwesomeIcon icon={faScissors} className="mr-1" />
+            <Scissors size={14} className="mr-1" />
             {business.services_count} servicios
           </span>
         </div>
@@ -116,14 +110,14 @@ function EstablishmentCardComponent({
         <div className="establishment-header">
           <h3 className="establishment-name">{business.name}</h3>
           <div className="establishment-rating">
-            <FontAwesomeIcon icon={faStar} className="rating-star" />
+            <Star size={14} className="rating-star" fill="currentColor" />
             <span className="rating-value">{rating.toFixed(1)}</span>
             <span className="rating-count">({business.total_reviews})</span>
           </div>
         </div>
 
         <div className="establishment-location">
-          <FontAwesomeIcon icon={faLocationDot} className="location-icon" />
+          <MapPin size={14} className="location-icon" />
           <span>{business.address}</span>
           {business.city && (
             <>

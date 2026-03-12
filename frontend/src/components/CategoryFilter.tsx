@@ -1,29 +1,28 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faMagnifyingGlass,
-  faScissors,
-  faSpa,
-  faPaw,
-  faCar,
-  faPaintBrush,
-  faStore,
-} from "@fortawesome/free-solid-svg-icons";
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+  Search,
+  Scissors,
+  Sparkles,
+  PawPrint,
+  Car,
+  Paintbrush,
+  Store,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { CategoryOption } from "@/types";
 
 // Iconos para cada categoría del backend
-const categoryIcons: Record<string, IconDefinition> = {
-  BARBERSHOP: faScissors,
-  HAIR_SALON: faScissors,
-  NAIL_SALON: faPaintBrush,
-  SPA: faSpa,
-  CAR_WASH: faCar,
-  PET_GROOMING: faPaw,
-  TATTOO_STUDIO: faPaintBrush,
-  OTHER: faStore,
+const categoryIcons: Record<string, LucideIcon> = {
+  BARBERSHOP: Scissors,
+  HAIR_SALON: Scissors,
+  NAIL_SALON: Paintbrush,
+  SPA: Sparkles,
+  CAR_WASH: Car,
+  PET_GROOMING: PawPrint,
+  TATTOO_STUDIO: Paintbrush,
+  OTHER: Store,
 };
 
 interface CategoryFilterProps {
@@ -41,7 +40,7 @@ function CategoryFilterComponent({
     (categoryId: string) => {
       onCategoryChange(categoryId);
     },
-    [onCategoryChange]
+    [onCategoryChange],
   );
 
   return (
@@ -55,10 +54,10 @@ function CategoryFilterComponent({
         aria-pressed={selectedCategory === "all"}
         aria-label="Mostrar todos"
       >
-        <FontAwesomeIcon icon={faMagnifyingGlass} className="category-icon" />
+        <Search size={16} className="category-icon" />
         <span>Todos</span>
       </button>
-      
+
       {/* Categorías del backend */}
       {categories.map((cat) => (
         <button
@@ -70,10 +69,10 @@ function CategoryFilterComponent({
           aria-pressed={selectedCategory === cat.value}
           aria-label={`Filtrar por ${cat.label}`}
         >
-          <FontAwesomeIcon 
-            icon={categoryIcons[cat.value] || faStore} 
-            className="category-icon" 
-          />
+          {(() => {
+            const IconComponent = categoryIcons[cat.value] || Store;
+            return <IconComponent size={16} className="category-icon" />;
+          })()}
           <span>{cat.label}</span>
         </button>
       ))}
