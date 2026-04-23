@@ -13,6 +13,7 @@ export { appointmentsApi } from "./appointments";
 export { userApi } from "./user";
 export { favoritesApi } from "./favorites";
 export { reviewsApi, businessImagesApi } from "./reviews";
+export { notificationsApi } from "./notifications";
 
 // Re-export for backward compatibility with existing code that imports from api.ts
 import { authApi } from "./auth";
@@ -23,6 +24,7 @@ import { appointmentsApi } from "./appointments";
 import { userApi } from "./user";
 import { favoritesApi } from "./favorites";
 import { reviewsApi, businessImagesApi } from "./reviews";
+import { notificationsApi } from "./notifications";
 
 // Unified API object for backward compatibility
 export const api = {
@@ -101,4 +103,12 @@ export const api = {
     businessImagesApi.getBusinessImages.bind(businessImagesApi),
   addBusinessImage: businessImagesApi.addImage.bind(businessImagesApi),
   removeBusinessImage: businessImagesApi.removeImage.bind(businessImagesApi),
+
+  // Notifications
+  getMyNotifications: notificationsApi.getMy.bind(notificationsApi),
+  getUnreadNotificationsCount:
+    notificationsApi.getUnreadCount.bind(notificationsApi),
+  markNotificationAsRead: notificationsApi.markAsRead.bind(notificationsApi),
+  markAllNotificationsAsRead:
+    notificationsApi.markAllAsRead.bind(notificationsApi),
 };

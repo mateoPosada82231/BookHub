@@ -442,7 +442,10 @@ function PerfilContent() {
               <ChevronRight className="profile-menu-arrow h-5 w-5" />
             </button>
 
-            <button className="profile-menu-item">
+            <button
+              className="profile-menu-item"
+              onClick={() => router.push("/notificaciones")}
+            >
               <div className="profile-menu-icon">
                 <Bell className="h-5 w-5" />
               </div>

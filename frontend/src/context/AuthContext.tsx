@@ -8,7 +8,7 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import { api, AuthResponse, ApiError } from "@/lib/api";
+import { api, AuthResponse } from "@/lib/api";
 import { UserRole } from "@/types";
 
 interface User {
@@ -94,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const saveAuthData = useCallback(
     (response: AuthResponse) => {
       localStorage.setItem("accessToken", response.access_token);
+      document.cookie = `accessToken=${response.access_token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
       // refreshToken is stored as httpOnly cookie by the backend
 
       const userData: User = {
@@ -118,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearRefreshTimeout();
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
+    document.cookie = "accessToken=; path=/; max-age=0";
     setUser(null);
   }, [clearRefreshTimeout]);
 
@@ -143,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const userData = JSON.parse(storedUser);
           setUser(userData);
+          document.cookie = `accessToken=${accessToken}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
 
           // Read real token expiration for refresh scheduling
           const expiresInMs =

@@ -128,6 +128,25 @@ export type AppointmentStatus =
   | "CANCELLED"
   | "NO_SHOW";
 
+export type NotificationType =
+  | "APPOINTMENT_CREATED"
+  | "APPOINTMENT_CANCELLED"
+  | "APPOINTMENT_RESCHEDULED"
+  | "APPOINTMENT_STATUS_UPDATED"
+  | "SYSTEM";
+
+export interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  type: NotificationType;
+  is_read: boolean;
+  read_at?: string;
+  entity_type?: string;
+  entity_id?: number;
+  created_at: string;
+}
+
 export interface Appointment {
   id: number;
   client_id: number;

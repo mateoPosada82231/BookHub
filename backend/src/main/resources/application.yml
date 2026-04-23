@@ -70,7 +70,7 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
     allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
-    allowed-headers: Authorization,Content-Type,Accept
+    allowed-headers: Authorization,Content-Type,Accept,Cache-Control,Last-Event-ID
     max-age: 3600
 
   # Password Reset Configuration
@@ -84,6 +84,9 @@ app:
 
   # Frontend URL for email links
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
+
+  notifications:
+    retention-days: ${NOTIFICATIONS_RETENTION_DAYS:90}
 
   # Rate Limiting Configuration
   rate-limit:

@@ -63,6 +63,9 @@ class AppointmentServiceTest {
     @Mock
     private EmailService emailService;
 
+        @Mock
+        private NotificationService notificationService;
+
     @InjectMocks
     private AppointmentService appointmentService;
 

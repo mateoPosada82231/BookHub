@@ -21,6 +21,7 @@ const protectedPaths = [
   "/mi-agenda",
   "/mi-negocio",
   "/favoritos",
+  "/notificaciones",
 ];
 
 export function middleware(request: NextRequest) {

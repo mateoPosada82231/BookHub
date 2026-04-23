@@ -99,7 +99,7 @@ function EstablishmentCardComponent({
         {/* Services Count Badge */}
         <div className="price-badge-container">
           <span className="price-badge">
-            <Scissors size={14} className="mr-1" />
+            <Scissors size={14} className="inline-block align-middle mr-1" />
             {business.services_count} servicios
           </span>
         </div>

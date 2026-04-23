@@ -13,9 +13,11 @@ import {
   X,
   LogOut,
   ClipboardList,
+  Bell,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/context/NotificationContext";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import "@/styles/home.css";
 
@@ -32,6 +34,7 @@ interface NavItem {
 export function Navbar() {
   const pathname = usePathname();
   const { user, isAuthenticated, isOwner, isWorker, logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
@@ -50,6 +53,12 @@ export function Navbar() {
         href: "/favoritos",
         label: "Favoritos",
         icon: Heart,
+        authRequired: true,
+      },
+      {
+        href: "/notificaciones",
+        label: "Notificaciones",
+        icon: Bell,
         authRequired: true,
       },
       { href: "/perfil", label: "Perfil", icon: User, authRequired: true },
@@ -167,6 +176,13 @@ export function Navbar() {
                 >
                   <item.icon size={18} className="navbar-link-icon" />
                   <span>{item.label}</span>
+                  {item.href === "/notificaciones" &&
+                    isAuthenticated &&
+                    unreadCount > 0 && (
+                      <span className="navbar-notification-badge">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
                 </Link>
               );
             })}
@@ -252,6 +268,13 @@ export function Navbar() {
                 >
                   <item.icon size={18} className="navbar-mobile-link-icon" />
                   <span>{item.label}</span>
+                  {item.href === "/notificaciones" &&
+                    isAuthenticated &&
+                    unreadCount > 0 && (
+                      <span className="navbar-mobile-notification-badge">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
                 </Link>
               );
             })}

@@ -9,6 +9,7 @@ import com.bookhub.backend.api.exception.ResourceNotFoundException;
 import com.bookhub.backend.config.InputSanitizer;
 import com.bookhub.backend.domain.booking.*;
 import com.bookhub.backend.domain.business.*;
+import com.bookhub.backend.domain.notification.NotificationType;
 import com.bookhub.backend.domain.user.User;
 import com.bookhub.backend.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,12 +27,17 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AppointmentService {
+
+    private static final DateTimeFormatter NOTIFICATION_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private final AppointmentRepository appointmentRepository;
     private final ReviewRepository reviewRepository;
@@ -42,6 +48,7 @@ public class AppointmentService {
     private final BusinessRepository businessRepository;
     private final InputSanitizer sanitizer;
     private final EmailService emailService;
+    private final NotificationService notificationService;
 
     /**
      * Create a new appointment
@@ -112,6 +119,8 @@ public class AppointmentService {
         } catch (Exception e) {
             // Don't fail appointment creation if email fails
         }
+
+        notifyAppointmentCreated(appointment);
 
         return toResponse(appointment);
     }
@@ -210,6 +219,8 @@ public class AppointmentService {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cita", appointmentId));
 
+        AppointmentStatus previousStatus = appointment.getStatus();
+
         boolean isClient = appointment.getClient().getId().equals(userId);
         boolean isWorker = appointment.getWorker().getUser().getId().equals(userId);
         boolean isOwner = appointment.getWorker().getBusiness().getOwner().getId().equals(userId);
@@ -228,6 +239,10 @@ public class AppointmentService {
         }
 
         appointment = appointmentRepository.save(appointment);
+
+        if (request.getStatus() != null && previousStatus != appointment.getStatus()) {
+            notifyAppointmentStatusChanged(appointment, previousStatus, appointment.getStatus());
+        }
 
         return toResponse(appointment);
     }
@@ -270,6 +285,8 @@ public class AppointmentService {
         } catch (Exception e) {
             // Don't fail cancellation if email fails
         }
+
+        notifyAppointmentCancelled(appointment);
 
         return toResponse(appointment);
     }
@@ -324,6 +341,8 @@ public class AppointmentService {
         appointment.setStatus(AppointmentStatus.PENDING);
 
         appointment = appointmentRepository.save(appointment);
+
+        notifyAppointmentRescheduled(appointment);
 
         return toResponse(appointment);
     }
@@ -517,6 +536,102 @@ public class AppointmentService {
                 .last(page.isLast())
                 .empty(page.isEmpty())
                 .build();
+    }
+
+    private void notifyAppointmentCreated(Appointment appointment) {
+        String title = "Nueva cita agendada";
+        String message = String.format(
+                "Se agendo una cita de %s para el %s en %s.",
+                appointment.getService().getName(),
+                formatDateTime(appointment.getStartTime()),
+                appointment.getWorker().getBusiness().getName()
+        );
+
+        notificationService.createNotificationForUsers(
+                getParticipantUserIds(appointment),
+                title,
+                message,
+                NotificationType.APPOINTMENT_CREATED,
+                "APPOINTMENT",
+                appointment.getId()
+        );
+    }
+
+    private void notifyAppointmentCancelled(Appointment appointment) {
+        String title = "Cita cancelada";
+        String message = String.format(
+                "La cita de %s del %s fue cancelada.",
+                appointment.getService().getName(),
+                formatDateTime(appointment.getStartTime())
+        );
+
+        notificationService.createNotificationForUsers(
+                getParticipantUserIds(appointment),
+                title,
+                message,
+                NotificationType.APPOINTMENT_CANCELLED,
+                "APPOINTMENT",
+                appointment.getId()
+        );
+    }
+
+    private void notifyAppointmentRescheduled(Appointment appointment) {
+        String title = "Cita reagendada";
+        String message = String.format(
+                "La cita de %s fue reagendada para el %s.",
+                appointment.getService().getName(),
+                formatDateTime(appointment.getStartTime())
+        );
+
+        notificationService.createNotificationForUsers(
+                getParticipantUserIds(appointment),
+                title,
+                message,
+                NotificationType.APPOINTMENT_RESCHEDULED,
+                "APPOINTMENT",
+                appointment.getId()
+        );
+    }
+
+    private void notifyAppointmentStatusChanged(Appointment appointment, AppointmentStatus previousStatus, AppointmentStatus newStatus) {
+        String title = "Estado de cita actualizado";
+        String message = String.format(
+                "La cita de %s cambio de %s a %s.",
+                appointment.getService().getName(),
+                translateStatus(previousStatus),
+                translateStatus(newStatus)
+        );
+
+        notificationService.createNotificationForUsers(
+                getParticipantUserIds(appointment),
+                title,
+                message,
+                NotificationType.APPOINTMENT_STATUS_UPDATED,
+                "APPOINTMENT",
+                appointment.getId()
+        );
+    }
+
+    private Set<Long> getParticipantUserIds(Appointment appointment) {
+        Set<Long> userIds = new LinkedHashSet<>();
+        userIds.add(appointment.getClient().getId());
+        userIds.add(appointment.getWorker().getUser().getId());
+        userIds.add(appointment.getWorker().getBusiness().getOwner().getId());
+        return userIds;
+    }
+
+    private String formatDateTime(LocalDateTime dateTime) {
+        return dateTime.format(NOTIFICATION_DATE_FORMAT);
+    }
+
+    private String translateStatus(AppointmentStatus status) {
+        return switch (status) {
+            case PENDING -> "Pendiente";
+            case CONFIRMED -> "Confirmada";
+            case COMPLETED -> "Completada";
+            case CANCELLED -> "Cancelada";
+            case NO_SHOW -> "No asistio";
+        };
     }
 
     /**
